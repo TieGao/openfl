@@ -120,6 +120,7 @@ import js.html.DivElement;
 #end
 @:access(openfl.display.Graphics)
 @:access(openfl.errors.Error)
+@:access(openfl.events.Event)
 @:access(openfl.geom.ColorTransform)
 @:access(openfl.geom.Matrix)
 @:access(openfl.geom.Rectangle)
@@ -626,6 +627,28 @@ class TextField extends InteractiveObject
 	public var textColor(get, set):Int;
 
 	/**
+		The color of the text within the selection range in a text field, in
+		hexadecimal format. The hexadecimal color system uses six digits to
+		represent color values. Each digit has 16 possible values or characters.
+		The characters range from 0-9 and then A-F. For example, black is
+		`0x000000`; white is `0xFFFFFF`.
+
+		@default 0xffffff
+	**/
+	public var selectionTextColor(get, set):Int;
+
+	/**
+		The color of the highlight that appears around the text within the
+		selection range in a text field, in hexadecimal format. The hexadecimal
+		color system uses six digits to represent color values. Each digit has
+		16 possible values or characters. The characters range from 0-9 and then
+		A-F. For example, black is `0x000000`; white is `0xFFFFFF`.
+
+		@default 0(0x000000)
+	**/
+	public var selectionHighlightColor(get, set):Int;
+
+	/**
 		The height of the text in pixels.
 	**/
 	public var textHeight(get, never):Float;
@@ -828,6 +851,14 @@ class TextField extends InteractiveObject
 				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_textColor (v); }")
 			},
 			"textHeight": {get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_textHeight (); }")},
+			"selectionHighlightColor": {
+				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_selectionHighlightColor (); }"),
+				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_selectionHighlightColor (v); }")
+			},
+			"selectionTextColor": {
+				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_selectionTextColor (); }"),
+				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_selectionTextColor (v); }")
+			},
 			"textWidth": {get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_textWidth (); }")},
 			"type": {
 				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_type (); }"),
@@ -2816,11 +2847,18 @@ class TextField extends InteractiveObject
 	@:noCompletion private override function get_height():Float
 	{
 		__updateLayout();
-		return __textEngine.height * Math.abs(scaleY);
+		return __textEngine.height * Math.abs(__scaleY);
 	}
 
 	@:noCompletion private override function set_height(value:Float):Float
 	{
+		if (value < 0.0)
+		{
+			// ignore negative values completely, and keep the current size
+			// negative values may be achieved by setting scaleY, though
+			return __textEngine.height * Math.abs(__scaleY);
+		}
+
 		if (value != __textEngine.height)
 		{
 			__setTransformDirty();
@@ -2831,7 +2869,7 @@ class TextField extends InteractiveObject
 			__textEngine.height = value;
 		}
 
-		return __textEngine.height * Math.abs(scaleY);
+		return __textEngine.height * Math.abs(__scaleY);
 	}
 
 	@:noCompletion private function get_htmlText():String
@@ -3007,7 +3045,19 @@ class TextField extends InteractiveObject
 			__dirty = true;
 			__setRenderDirty();
 			__textEngine.scrollH = value;
-			dispatchEvent(new Event(Event.SCROLL));
+
+			#if openfl_pool_events
+			var scrollEvent = Event.__pool.get();
+			scrollEvent.type = Event.SCROLL;
+			#else
+			var scrollEvent = new Event(Event.SCROLL);
+			#end
+
+			dispatchEvent(scrollEvent);
+
+			#if openfl_pool_events
+			Event.__pool.release(scrollEvent);
+			#end
 		}
 
 		return __textEngine.scrollH;
@@ -3030,7 +3080,19 @@ class TextField extends InteractiveObject
 			__dirty = true;
 			__setRenderDirty();
 			__textEngine.scrollV = value;
-			dispatchEvent(new Event(Event.SCROLL));
+
+			#if openfl_pool_events
+			var scrollEvent = Event.__pool.get();
+			scrollEvent.type = Event.SCROLL;
+			#else
+			var scrollEvent = new Event(Event.SCROLL);
+			#end
+
+			dispatchEvent(scrollEvent);
+
+			#if openfl_pool_events
+			Event.__pool.release(scrollEvent);
+			#end
 		}
 
 		return __textEngine.scrollV;
@@ -3188,6 +3250,42 @@ class TextField extends InteractiveObject
 		return __textFormat.color = value;
 	}
 
+	@:noCompletion private var __selectionHighlightColor:Int = 0x000000;
+
+	@:noCompletion private function get_selectionHighlightColor():Int
+	{
+		return __selectionHighlightColor;
+	}
+
+	@:noCompletion private function set_selectionHighlightColor(value:Int):Int
+	{
+		if (value != __selectionHighlightColor)
+		{
+			__dirty = true;
+			__setRenderDirty();
+		}
+
+		return __selectionHighlightColor = value;
+	}
+
+	@:noCompletion private var __selectionTextColor:Int = 0xffffff;
+
+	@:noCompletion private function get_selectionTextColor():Int
+	{
+		return __selectionTextColor;
+	}
+
+	@:noCompletion private function set_selectionTextColor(value:Int):Int
+	{
+		if (value != __selectionTextColor)
+		{
+			__dirty = true;
+			__setRenderDirty();
+		}
+
+		return __selectionTextColor = value;
+	}
+
 	@:noCompletion private function get_textWidth():Float
 	{
 		__updateLayout();
@@ -3242,14 +3340,21 @@ class TextField extends InteractiveObject
 		return __textEngine.type;
 	}
 
-	override private function get_width():Float
+	@:noCompletion override private function get_width():Float
 	{
 		__updateLayout();
 		return __textEngine.width * Math.abs(__scaleX);
 	}
 
-	override private function set_width(value:Float):Float
+	@:noCompletion override private function set_width(value:Float):Float
 	{
+		if (value < 0.0)
+		{
+			// ignore negative values completely, and keep the current size
+			// negative values may be achieved by setting scaleX, though
+			return __textEngine.width * Math.abs(__scaleX);
+		}
+
 		if (value != __textEngine.width)
 		{
 			__setTransformDirty();
@@ -3570,7 +3675,19 @@ class TextField extends InteractiveObject
 					{
 						__replaceSelectedText("\n", true);
 
-						dispatchEvent(new Event(Event.CHANGE, true));
+						#if openfl_pool_events
+						var changeEvent = Event.__pool.get();
+						changeEvent.type = Event.CHANGE;
+						changeEvent.bubbles = true;
+						#else
+						var changeEvent = new Event(Event.CHANGE, true);
+						#end
+
+						dispatchEvent(changeEvent);
+
+						#if openfl_pool_events
+						Event.__pool.release(changeEvent);
+						#end
 					}
 				}
 				else
@@ -3590,7 +3707,19 @@ class TextField extends InteractiveObject
 					replaceSelectedText("");
 					__selectionIndex = __caretIndex;
 
-					dispatchEvent(new Event(Event.CHANGE, true));
+					#if openfl_pool_events
+					var changeEvent = Event.__pool.get();
+					changeEvent.type = Event.CHANGE;
+					changeEvent.bubbles = true;
+					#else
+					var changeEvent = new Event(Event.CHANGE, true);
+					#end
+
+					dispatchEvent(changeEvent);
+
+					#if openfl_pool_events
+					Event.__pool.release(changeEvent);
+					#end
 				}
 				else
 				{
@@ -3609,7 +3738,19 @@ class TextField extends InteractiveObject
 					replaceSelectedText("");
 					__selectionIndex = __caretIndex;
 
-					dispatchEvent(new Event(Event.CHANGE, true));
+					#if openfl_pool_events
+					var changeEvent = Event.__pool.get();
+					changeEvent.type = Event.CHANGE;
+					changeEvent.bubbles = true;
+					#else
+					var changeEvent = new Event(Event.CHANGE, true);
+					#end
+
+					dispatchEvent(changeEvent);
+
+					#if openfl_pool_events
+					Event.__pool.release(changeEvent);
+					#end
 				}
 				else
 				{
@@ -3739,7 +3880,20 @@ class TextField extends InteractiveObject
 						Clipboard.text = __text.substring(__caretIndex, __selectionIndex);
 
 						replaceSelectedText("");
-						dispatchEvent(new Event(Event.CHANGE, true));
+
+						#if openfl_pool_events
+						var changeEvent = Event.__pool.get();
+						changeEvent.type = Event.CHANGE;
+						changeEvent.bubbles = true;
+						#else
+						var changeEvent = new Event(Event.CHANGE, true);
+						#end
+
+						dispatchEvent(changeEvent);
+
+						#if openfl_pool_events
+						Event.__pool.release(changeEvent);
+						#end
 					}
 				}
 				#end
@@ -3760,7 +3914,19 @@ class TextField extends InteractiveObject
 						{
 							__replaceSelectedText(clipboardText, true);
 
-							dispatchEvent(new Event(Event.CHANGE, true));
+							#if openfl_pool_events
+							var changeEvent = Event.__pool.get();
+							changeEvent.type = Event.CHANGE;
+							changeEvent.bubbles = true;
+							#else
+							var changeEvent = new Event(Event.CHANGE, true);
+							#end
+
+							dispatchEvent(changeEvent);
+
+							#if openfl_pool_events
+							Event.__pool.release(changeEvent);
+							#end
 						}
 					}
 				}
@@ -3788,7 +3954,19 @@ class TextField extends InteractiveObject
 		__replaceSelectedText(value, true);
 
 		// TODO: Dispatch change if at max chars?
-		dispatchEvent(new Event(Event.CHANGE, true));
+		#if openfl_pool_events
+		var changeEvent = Event.__pool.get();
+		changeEvent.type = Event.CHANGE;
+		changeEvent.bubbles = true;
+		#else
+		var changeEvent = new Event(Event.CHANGE, true);
+		#end
+
+		dispatchEvent(changeEvent);
+
+		#if openfl_pool_events
+		Event.__pool.release(changeEvent);
+		#end
 	}
 }
 #else

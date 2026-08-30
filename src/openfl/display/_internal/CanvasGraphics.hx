@@ -43,6 +43,8 @@ class CanvasGraphics
 	private static var allowSmoothing:Bool;
 	private static var bitmapRepeat:Bool;
 	private static var bounds:Rectangle;
+	private static var renderOrHitTestReader:DrawCommandReader = new DrawCommandReader(null);
+	private static var playCommandsReader:DrawCommandReader = new DrawCommandReader(null);
 	private static var fillCommands:DrawCommandBuffer = new DrawCommandBuffer();
 	private static var bitmapFill:BitmapData;
 	private static var fillScale9Bounds:Scale9GridBounds;
@@ -813,7 +815,9 @@ class CanvasGraphics
 
 			windingRule = CanvasWindingRule.EVENODD;
 
-			var data = new DrawCommandReader(graphics.__commands);
+			var data = renderOrHitTestReader;
+			data.reset();
+			data.buffer = graphics.__commands;
 
 			for (type in graphics.__commands.types)
 			{
@@ -1093,7 +1097,9 @@ class CanvasGraphics
 			}
 		}
 
-		var data = new DrawCommandReader(commands);
+		var data = playCommandsReader;
+		data.reset();
+		data.buffer = commands;
 
 		var r:Int;
 		var g:Int;
@@ -1113,6 +1119,10 @@ class CanvasGraphics
 			{
 				case CUBIC_CURVE_TO:
 					var c = data.readCubicCurveTo();
+					if (!hasPath && !setStart)
+					{
+						context.moveTo(-offsetX, -offsetY);
+					}
 					hasPath = true;
 
 					if (hasScale9Grid)
@@ -1158,6 +1168,10 @@ class CanvasGraphics
 
 				case CURVE_TO:
 					var c = data.readCurveTo();
+					if (!hasPath && !setStart)
+					{
+						context.moveTo(-offsetX, -offsetY);
+					}
 					hasPath = true;
 
 					if (hasScale9Grid)
@@ -1233,6 +1247,10 @@ class CanvasGraphics
 
 				case LINE_TO:
 					var c = data.readLineTo();
+					if (!hasPath && !setStart)
+					{
+						context.moveTo(-offsetX, -offsetY);
+					}
 					hasPath = true;
 
 					if (hasScale9Grid)
@@ -2225,7 +2243,9 @@ class CanvasGraphics
 
 			windingRule = CanvasWindingRule.EVENODD;
 
-			var data = new DrawCommandReader(graphics.__commands);
+			var data = renderOrHitTestReader;
+			data.reset();
+			data.buffer = graphics.__commands;
 
 			for (type in graphics.__commands.types)
 			{
@@ -2488,7 +2508,9 @@ class CanvasGraphics
 			var offsetX = 0;
 			var offsetY = 0;
 
-			var data = new DrawCommandReader(graphics.__commands);
+			var data = renderOrHitTestReader;
+			data.reset();
+			data.buffer = graphics.__commands;
 
 			for (type in graphics.__commands.types)
 			{

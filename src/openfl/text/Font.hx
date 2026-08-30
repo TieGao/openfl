@@ -4,7 +4,6 @@ package openfl.text;
 import openfl.utils.Assets;
 import openfl.utils.ByteArray;
 import openfl.utils.Future;
-import openfl.text._internal.TextEngine;
 #if lime
 import lime.text.Font as LimeFont;
 #end
@@ -21,7 +20,6 @@ import lime.text.Font as LimeFont;
 @:fileXml('tags="haxe,release"')
 @:noDebug
 #end
-@:access(openfl.text._internal.TextEngine)
 class Font #if lime extends LimeFont #end
 {
 	/**
@@ -43,6 +41,7 @@ class Font #if lime extends LimeFont #end
 
 	@:noCompletion private static var __fontByName:Map<String, Font> = new Map();
 	@:noCompletion private static var __registeredFonts:Array<Font> = new Array();
+	@:noCompletion private static var __supportedFontFileExtensions:Array<String> = ["ttf", "otf", "ttc", "otc"];
 
 	@:noCompletion private var __initialized:Bool;
 
@@ -79,7 +78,6 @@ class Font #if lime extends LimeFont #end
 	public static function enumerateFonts(enumerateDeviceFonts:Bool = false):Array<Font>
 	{
 		#if (lime && native)
-		TextEngine.initializeDefaultFonts();
 		if (enumerateDeviceFonts)
 		{
 			var _allFonts = __registeredFonts.copy();
@@ -88,7 +86,8 @@ class Font #if lime extends LimeFont #end
 				var files = sys.FileSystem.readDirectory(lime.system.System.fontsDirectory);
 				for (file in files)
 				{
-					if (file.toLowerCase().indexOf('.ttf') != -1)
+					var ext = haxe.io.Path.extension(file.toLowerCase());
+					if (__supportedFontFileExtensions.indexOf(ext) != -1)
 					{
 						var font = fromFile(lime.system.System.fontsDirectory + file);
 						if (font != null)
@@ -109,9 +108,10 @@ class Font #if lime extends LimeFont #end
 				var files = sys.FileSystem.readDirectory(alternateFontsDirectory);
 				for (file in files)
 				{
-					if (file.toLowerCase().indexOf('.ttf') != -1)
+					var ext = haxe.io.Path.extension(file.toLowerCase());
+					if (__supportedFontFileExtensions.indexOf(ext) != -1)
 					{
-						var font = fromFile(alternateFontsDirectory + "\\" + file);
+						var font = fromFile(alternateFontsDirectory + file);
 						if (font != null)
 						{
 							_allFonts.push(font);
@@ -119,6 +119,27 @@ class Font #if lime extends LimeFont #end
 					}
 				}
 			}
+			#elseif mac
+			var alternateFontsDirectory = '${lime.system.System.userDirectory}/Library/Fonts';
+			if (sys.FileSystem.exists(alternateFontsDirectory))
+			{
+				var files = sys.FileSystem.readDirectory(alternateFontsDirectory);
+				for (file in files)
+				{
+					var ext = haxe.io.Path.extension(file.toLowerCase());
+					if (__supportedFontFileExtensions.indexOf(ext) != -1)
+					{
+						var file = fromFile(alternateFontsDirectory + "/" + file);
+						if (file != null)
+						{
+							_allFonts.push(file);
+						}
+					}
+				}
+			}
+			#elseif linux
+			var alternateFontsDirectory = '${lime.system.System.userDirectory}/.local/share/fonts';
+			__enumerateDeviceFontsRecursive(alternateFontsDirectory, _allFonts);
 			#end
 
 			return _allFonts;
@@ -293,6 +314,56 @@ class Font #if lime extends LimeFont #end
 	{
 		__copyFrom(font);
 	}
+
+	@:noCompletion override private function __copyFrom(font:LimeFont):Void
+	{
+		super.__copyFrom(font);
+		__initializeFontStyleAndType();
+	}
+
+	@:noCompletion override private function __initializeSource():Void
+	{
+		super.__initializeSource();
+		__initializeFontStyleAndType();
+	}
+	#end
+
+	#if (lime && native)
+	@:noCompletion private static function __enumerateDeviceFontsRecursive(directory:String, _allFonts:Array<Font>):Void
+	{
+		#if windows
+		var separator = "\\";
+		#else
+		var separator = "/";
+		#end
+		var pathsToSearch:Array<String> = [directory];
+		while (pathsToSearch.length > 0)
+		{
+			var pathToSearch = pathsToSearch.shift();
+			if (sys.FileSystem.exists(pathToSearch) && sys.FileSystem.isDirectory(pathToSearch))
+			{
+				var files = sys.FileSystem.readDirectory(pathToSearch);
+				for (file in files)
+				{
+					var filePath = pathToSearch + separator + file;
+					if (sys.FileSystem.isDirectory(filePath))
+					{
+						pathsToSearch.push(filePath);
+						continue;
+					}
+					var ext = haxe.io.Path.extension(file.toLowerCase());
+					if (__supportedFontFileExtensions.indexOf(ext) != -1)
+					{
+						var font = fromFile(filePath);
+						if (font != null)
+						{
+							_allFonts.push(font);
+						}
+					}
+				}
+			}
+		}
+	}
 	#end
 
 	@:noCompletion private function __initialize():Bool
@@ -316,6 +387,14 @@ class Font #if lime extends LimeFont #end
 
 		return __initialized;
 	}
+
+	#if lime
+	@:noCompletion private function __initializeFontStyleAndType():Void
+	{
+
+		fontType = DEVICE;
+	}
+	#end
 
 	// Get & Set Methods
 	@:noCompletion private inline function get_fontName():String

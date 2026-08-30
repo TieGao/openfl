@@ -652,6 +652,8 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 	**/
 	public var parent(default, null):DisplayObjectContainer;
 
+	@:noCompletion private var __root:DisplayObject;
+
 	/**
 		For a display object in a loaded SWF file, the `root` property
 		is the top-most display object in the portion of the display list's tree
@@ -1153,8 +1155,9 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 		if (__initStage != null)
 		{
 			this.stage = __initStage;
+			__root = this;
 			__initStage = null;
-			this.stage.addChild(this);
+			this.stage.__addChild(this);
 		}
 	}
 
@@ -1804,6 +1807,30 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 	@:noCompletion private function __setStageReference(stage:Stage):Void
 	{
 		this.stage = stage;
+
+		if (stage != null)
+		{
+			if (Lib.current == this && parent == stage)
+			{
+				__root = this;
+			}
+			else if (parent != null)
+			{
+				__root = parent.__root;
+			}
+			else if (__renderParent != null)
+			{
+				__root = __renderParent.__root;
+			}
+			else
+			{
+				__root = null;
+			}
+		}
+		else
+		{
+			__root = null;
+		}
 	}
 
 	@:noCompletion private function __setTransformDirty():Void
@@ -2239,12 +2266,7 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 
 	@:noCompletion private function get_root():DisplayObject
 	{
-		if (stage != null)
-		{
-			return Lib.current;
-		}
-
-		return null;
+		return __root;
 	}
 
 	@:keep @:noCompletion private function get_rotation():Float

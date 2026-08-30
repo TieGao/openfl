@@ -74,6 +74,8 @@ import openfl.text.engine.FontWeight;
 @:fileXml('tags="haxe,release"')
 @:noDebug
 #end
+@:access(openfl.display.DisplayObjectContainer)
+@:access(openfl.events.Event)
 class StageText extends EventDispatcher
 {
 	@:noCompletion private var __textField:TextField;
@@ -497,12 +499,12 @@ class StageText extends EventDispatcher
 		}
 		if (__textField.stage != null)
 		{
-			__textField.parent.removeChild(__textField);
+			__textField.parent.__removeChild(__textField);
 			__complete = false;
 		}
 		if (value != null)
 		{
-			value.addChild(__textField);
+			value.__addChild(__textField);
 			__dispatchComplete();
 		}
 		return __textField.stage;
@@ -734,7 +736,19 @@ class StageText extends EventDispatcher
 		if (!__complete && __textField.stage != null && !__viewPort.isEmpty())
 		{
 			__complete = true;
-			dispatchEvent(new Event(Event.COMPLETE));
+
+			#if openfl_pool_events
+			var completeEvent = Event.__pool.get();
+			completeEvent.type = Event.COMPLETE;
+			#else
+			var completeEvent = new Event(Event.COMPLETE);
+			#end
+
+			dispatchEvent(completeEvent);
+
+			#if openfl_pool_events
+			Event.__pool.release(completeEvent);
+			#end
 		}
 	}
 

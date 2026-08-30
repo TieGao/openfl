@@ -307,8 +307,6 @@ class TextFormat
 		newFormat.__ascent = __ascent;
 		newFormat.__descent = __descent;
 
-		newFormat.__cacheKey = __toCacheKey();
-
 		return newFormat;
 	}
 
@@ -337,8 +335,6 @@ class TextFormat
 
 		if (format.__ascent != null) __ascent = format.__ascent;
 		if (format.__descent != null) __descent = format.__descent;
-
-		__toCacheKey();
 	}
 
 	@:noCompletion private function __toCacheKey():String
@@ -351,7 +347,7 @@ class TextFormat
 		if (font != value)
 		{
 			font = value;
-			__toCacheKey();
+			__cacheKey = null;
 		}
 		return font;
 	}
@@ -382,7 +378,7 @@ class TextFormat
 		if (size != value)
 		{
 			size = value;
-			__toCacheKey();
+			__cacheKey = null;
 		}
 		return size;
 	}
@@ -392,7 +388,7 @@ class TextFormat
 		if (bold != value)
 		{
 			bold = value;
-			__toCacheKey();
+			__cacheKey = null;
 		}
 		return bold;
 	}
@@ -402,7 +398,7 @@ class TextFormat
 		if (italic != value)
 		{
 			italic = value;
-			__toCacheKey();
+			__cacheKey = null;
 		}
 		return italic;
 	}

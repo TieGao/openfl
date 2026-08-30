@@ -41,6 +41,8 @@ class Context3DGraphics
 	private static var tempIndicesVector:Vector<Int> = new Vector<Int>();
 	private static var tempUvtVector:Vector<Float> = new Vector<Float>();
 	private static var tempScale9VerticesVector:Vector<Float>;
+	private static var renderOrHitTestReader:DrawCommandReader = new DrawCommandReader(null);
+	private static var buildBufferReader:DrawCommandReader = new DrawCommandReader(null);
 
 	private static function buildBuffer(graphics:Graphics, renderer:OpenGLRenderer):Void
 	{
@@ -50,7 +52,9 @@ class Context3DGraphics
 		var vertexBufferPositionUVT = 0;
 		var bounds = graphics.__bounds;
 
-		var data = new DrawCommandReader(graphics.__commands);
+		var data = buildBufferReader;
+		data.reset();
+		data.buffer = graphics.__commands;
 
 		var context = renderer.__context3D;
 
@@ -526,7 +530,10 @@ class Context3DGraphics
 			return false;
 		}
 
-		var data = new DrawCommandReader(graphics.__commands);
+		var data = renderOrHitTestReader;
+		data.reset();
+		data.buffer = graphics.__commands;
+
 		var hasColorFill = false, hasBitmapFill = false, hasShaderFill = false;
 		// for each fill, allow drawing one shape only because the two shapes
 		// might intersect and require a cutout. fall back to software for that.
@@ -708,7 +715,9 @@ class Context3DGraphics
 					scale9Grid = null;
 				}
 
-				var data = new DrawCommandReader(graphics.__commands);
+				var data = renderOrHitTestReader;
+				data.reset();
+				data.buffer = graphics.__commands;
 
 				var context = renderer.__context3D;
 				var gl = context.gl;
@@ -783,10 +792,15 @@ class Context3DGraphics
 							renderer.applyBitmapData(blankBitmapData, true, repeat);
 							#if lime
 							var color:ARGB = (fill : ARGB);
-							tempColorTransform.redOffset = color.r;
-							tempColorTransform.greenOffset = color.g;
-							tempColorTransform.blueOffset = color.b;
-							tempColorTransform.__combine(graphics.__owner.__worldColorTransform);
+							var worldColorTransform = graphics.__owner.__worldColorTransform;
+							tempColorTransform.redMultiplier = worldColorTransform.redMultiplier;
+							tempColorTransform.greenMultiplier = worldColorTransform.greenMultiplier;
+							tempColorTransform.blueMultiplier = worldColorTransform.blueMultiplier;
+							tempColorTransform.alphaMultiplier = worldColorTransform.alphaMultiplier;
+							tempColorTransform.redOffset = color.r * worldColorTransform.redMultiplier + worldColorTransform.redOffset;
+							tempColorTransform.greenOffset = color.g * worldColorTransform.greenMultiplier + worldColorTransform.greenOffset;
+							tempColorTransform.blueOffset = color.b * worldColorTransform.blueMultiplier + worldColorTransform.blueOffset;
+							tempColorTransform.alphaOffset = color.a * worldColorTransform.alphaMultiplier + worldColorTransform.alphaOffset;
 							renderer.applyAlpha((color.a / 0xFF) * graphics.__owner.__worldAlpha);
 							renderer.applyColorTransform(tempColorTransform);
 							#else
@@ -944,10 +958,15 @@ class Context3DGraphics
 									renderer.applyBitmapData(blankBitmapData, true, repeat);
 									#if lime
 									var color:ARGB = (fill : ARGB);
-									tempColorTransform.redOffset = color.r;
-									tempColorTransform.greenOffset = color.g;
-									tempColorTransform.blueOffset = color.b;
-									tempColorTransform.__combine(graphics.__owner.__worldColorTransform);
+									var worldColorTransform = graphics.__owner.__worldColorTransform;
+									tempColorTransform.redMultiplier = worldColorTransform.redMultiplier;
+									tempColorTransform.greenMultiplier = worldColorTransform.greenMultiplier;
+									tempColorTransform.blueMultiplier = worldColorTransform.blueMultiplier;
+									tempColorTransform.alphaMultiplier = worldColorTransform.alphaMultiplier;
+									tempColorTransform.redOffset = color.r * worldColorTransform.redMultiplier + worldColorTransform.redOffset;
+									tempColorTransform.greenOffset = color.g * worldColorTransform.greenMultiplier + worldColorTransform.greenOffset;
+									tempColorTransform.blueOffset = color.b * worldColorTransform.blueMultiplier + worldColorTransform.blueOffset;
+									tempColorTransform.alphaOffset = color.a * worldColorTransform.alphaMultiplier + worldColorTransform.alphaOffset;
 									renderer.applyAlpha((color.a / 0xFF) * graphics.__owner.__worldAlpha);
 									renderer.applyColorTransform(tempColorTransform);
 									#else
@@ -1059,10 +1078,15 @@ class Context3DGraphics
 								renderer.applyBitmapData(blankBitmapData, true, repeat);
 								#if lime
 								var color:ARGB = (fill : ARGB);
-								tempColorTransform.redOffset = color.r;
-								tempColorTransform.greenOffset = color.g;
-								tempColorTransform.blueOffset = color.b;
-								tempColorTransform.__combine(graphics.__owner.__worldColorTransform);
+								var worldColorTransform = graphics.__owner.__worldColorTransform;
+								tempColorTransform.redMultiplier = worldColorTransform.redMultiplier;
+								tempColorTransform.greenMultiplier = worldColorTransform.greenMultiplier;
+								tempColorTransform.blueMultiplier = worldColorTransform.blueMultiplier;
+								tempColorTransform.alphaMultiplier = worldColorTransform.alphaMultiplier;
+								tempColorTransform.redOffset = color.r * worldColorTransform.redMultiplier + worldColorTransform.redOffset;
+								tempColorTransform.greenOffset = color.g * worldColorTransform.greenMultiplier + worldColorTransform.greenOffset;
+								tempColorTransform.blueOffset = color.b * worldColorTransform.blueMultiplier + worldColorTransform.blueOffset;
+								tempColorTransform.alphaOffset = color.a * worldColorTransform.alphaMultiplier + worldColorTransform.alphaOffset;
 								renderer.applyAlpha((color.a / 0xFF) * graphics.__owner.__worldAlpha);
 								renderer.applyColorTransform(tempColorTransform);
 								#else
