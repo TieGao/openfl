@@ -1085,6 +1085,10 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_rotation (); }"),
 				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_rotation (v); }")
 			},
+			"scale9Grid": {
+				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_scale9Grid (); }"),
+				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_scale9Grid (v); }")
+			},
 			"scaleX": {
 				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_scaleX (); }"),
 				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_scaleX (v); }")
@@ -1197,6 +1201,17 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 
 	public override function dispatchEvent(event:Event):Bool
 	{
+		if (event.__dispatching)
+		{
+			// if the event is already dispatching, it may still need to be
+			// passed to more of the original listeners. to redispatch without
+			// affecting the state of the event object that is passed those
+			// remaining original listeners, we need to create a clone that has
+			// its own distinct state.
+			event = event.clone();
+		}
+		event.__dispatching = true;
+
 		if ((event is MouseEvent))
 		{
 			var mouseEvent:MouseEvent = cast event;
@@ -1212,7 +1227,9 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 
 		event.target = this;
 
-		return __dispatchWithCapture(event);
+		var result = __dispatchWithCapture(event);
+		event.__dispatching = false;
+		return result;
 	}
 
 	/**
