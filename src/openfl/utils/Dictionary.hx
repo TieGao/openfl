@@ -564,199 +564,65 @@ abstract Dictionary<K, V>(IMap<K, V>)
 }
 #else
 @SuppressWarnings("checkstyle:FieldDocComment")
-abstract Dictionary<K, V>(DictionaryData<K, V>)
+abstract Dictionary<K, V>(Dynamic)
 {
 	public function new(weakKeys:Bool = false)
 	{
-		this = new DictionaryData();
+		this = {};
 	}
 
 	public inline function exists(key:K):Bool
 	{
-		return this.exists(key);
+		return Reflect.hasField(this, cast key);
 	}
 
 	@:arrayAccess public inline function get(key:K):V
 	{
-		return this.get(key);
+		return Reflect.field(this, cast key);
 	}
 
 	#if haxe4
 	@:runtime public inline function keyValueIterator():KeyValueIterator<K, V>
 	{
-		return this.keyValueIterator();
+		return new haxe.iterators.MapKeyValueIterator(this);
 	}
 	#end
 
 	public inline function remove(key:K):Bool
 	{
-		return this.remove(key);
+		if (Reflect.hasField(this, cast key))
+		{
+			Reflect.deleteField(this, cast key);
+			return true;
+		}
+
+		return false;
 	}
 
 	@:arrayAccess public inline function set(key:K, value:V):V
 	{
-		this.set(key, value);
+		Reflect.setField(this, cast key, value);
 		return value;
 	}
 
 	public inline function iterator():Iterator<K>
 	{
-		return this.keys();
+		var fields = Reflect.fields(this);
+		if (fields != null) return cast fields.iterator();
+		return null;
 	}
 
 	public inline function each():Iterator<V>
 	{
-		return this.iterator();
-	}
-}
+		var values:Array<V> = [];
 
-@:meta(JSDynamicOverride(getMethod = "get", setMethod = "set", deleteMethod = "remove", inMethod = "exists"))
-@:meta(JSForInOverride(iteratorMethod = "keys", iteratorHasNextMethod = "hasNext", iteratorNextMethod = "next"))
-@:meta(JSForEachOverride(iteratorMethod = "iterator", iteratorHasNextMethod = "hasNext", iteratorNextMethod = "next"))
-@SuppressWarnings("checkstyle:FieldDocComment")
-@:noCompletion @:dox(hide) class DictionaryData<K, V> implements haxe.Constraints.IMap<K, V>
-{
-	#if haxe4
-	@:noCompletion private var jsMap:js.lib.Map<K, V>;
-	#else
-	@:noCompletion private var objectMap:ObjectMap<K, V>;
-	#end
-
-	public inline function new(weakKeys:Bool = false)
-	{
-		#if haxe4
-		jsMap = new js.lib.Map();
-		#else
-		objectMap = new ObjectMap();
-		#end
-	}
-
-	public inline function get(key:K):V
-	{
-		#if haxe4
-		return jsMap.get(key);
-		#else
-		return objectMap.get(key);
-		#end
-	}
-
-	public inline function set(key:K, value:V):Void
-	{
-		#if haxe4
-		jsMap.set(key, value);
-		#else
-		objectMap.set(key, value);
-		#end
-	}
-
-	public inline function exists(key:K):Bool
-	{
-		#if haxe4
-		return jsMap.has(key);
-		#else
-		return objectMap.exists(key);
-		#end
-	}
-
-	public inline function remove(key:K):Bool
-	{
-		#if haxe4
-		return jsMap.delete(key);
-		#else
-		return objectMap.remove(key);
-		#end
-	}
-
-	public inline function keys():Iterator<K>
-	{
-		#if haxe4
-		#if (haxe_ver >= 4.1)
-		return new js.lib.HaxeIterator(jsMap.keys());
-		#else
-		var a = [];
-		var jsIterator = jsMap.keys();
-		while (true)
+		for (field in Reflect.fields(this))
 		{
-			var next = jsIterator.next();
-			if (next.done)
-			{
-				break;
-			}
-			a.push(next.value);
+			var value:V = Reflect.field(this, field);
+			values.push(value);
 		}
-		return a.iterator();
-		#end
-		#else
-		return objectMap.keys();
-		#end
-	}
 
-	public inline function iterator():Iterator<V>
-	{
-		#if haxe4
-		#if (haxe_ver >= 4.1)
-		return new js.lib.HaxeIterator(jsMap.values());
-		#else
-		var a = [];
-		var jsIterator = jsMap.values();
-		while (true)
-		{
-			var next = jsIterator.next();
-			if (next.done)
-			{
-				break;
-			}
-			a.push(next.value);
-		}
-		return a.iterator();
-		#end
-		#else
-		return objectMap.iterator(key);
-		#end
-	}
-
-	#if haxe4
-	public inline function keyValueIterator():KeyValueIterator<K, V>
-	{
-		return new haxe.iterators.MapKeyValueIterator(this);
-	}
-	#end
-
-	#if haxe4
-	public inline function clear():Void
-	{
-		#if haxe4
-		jsMap.clear();
-		#else
-		objectMap.clear();
-		#end
-	}
-	#end
-
-	#if haxe4
-	public inline function copy():DictionaryData<K, V>
-	{
-		var copied = new DictionaryData<K, V>();
-		for (key in keys())
-			copied.set(key, get(key));
-		return copied;
-	}
-	#end
-
-	public inline function toString():String
-	{
-		var s = new StringBuf();
-		s.add("[");
-		var it = keyValueIterator();
-		for (i in it)
-		{
-			s.add(Std.string(i.key));
-			s.add(" => ");
-			s.add(Std.string(i.value));
-			if (it.hasNext()) s.add(", ");
-		}
-		s.add("]");
-		return s.toString();
+		return values.iterator();
 	}
 }
 #end

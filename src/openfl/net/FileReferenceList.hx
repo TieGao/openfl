@@ -167,18 +167,7 @@ class FileReferenceList extends EventDispatcher
 	// Event Handlers
 	@:noCompletion private function fileDialog_onCancel():Void
 	{
-		#if openfl_pool_events
-		var cancelEvent = Event.__pool.get();
-		cancelEvent.type = Event.CANCEL;
-		#else
-		var cancelEvent = new Event(Event.CANCEL);
-		#end
-
-		dispatchEvent(cancelEvent);
-
-		#if openfl_pool_events
-		Event.__pool.release(cancelEvent);
-		#end
+		dispatchEvent(new Event(Event.CANCEL));
 	}
 
 	@:noCompletion private function fileDialog_onSelectMultiple(paths:Array<String>):Void
@@ -201,18 +190,7 @@ class FileReferenceList extends EventDispatcher
 			fileList.push(fileReference);
 		}
 
-		#if openfl_pool_events
-		var selectEvent = Event.__pool.get();
-		selectEvent.type = Event.SELECT;
-		#else
-		var selectEvent = new Event(Event.SELECT);
-		#end
-
-		dispatchEvent(selectEvent);
-
-		#if openfl_pool_events
-		Event.__pool.release(selectEvent);
-		#end
+		dispatchEvent(new Event(Event.SELECT));
 	}
 }
 #elseif js
@@ -232,7 +210,6 @@ import js.html.DataView;
 @:fileXml('tags="haxe,release"')
 @:noDebug
 #end
-@:access(openfl.events.Event)
 @:access(openfl.net.FileReference)
 class FileReferenceList extends EventDispatcher
 {
@@ -274,18 +251,7 @@ class FileReferenceList extends EventDispatcher
 		var files = (event.target : js.html.InputElement).files;
 		if (files.length == 0)
 		{
-			#if openfl_pool_events
-			var cancelEvent = Event.__pool.get();
-			cancelEvent.type = Event.CANCEL;
-			#else
-			var cancelEvent = new Event(Event.CANCEL);
-			#end
-
-			dispatchEvent(cancelEvent);
-
-			#if openfl_pool_events
-			Event.__pool.release(cancelEvent);
-			#end
+			dispatchEvent(new Event(Event.CANCEL));
 			return;
 		}
 		for (i in 0...files.length)
@@ -314,18 +280,7 @@ class FileReferenceList extends EventDispatcher
 				fileList.push(fileReference);
 				if (fileList.length == files.length)
 				{
-					#if openfl_pool_events
-					var selectEvent = Event.__pool.get();
-					selectEvent.type = Event.SELECT;
-					#else
-					var selectEvent = new Event(Event.SELECT);
-					#end
-
-					dispatchEvent(selectEvent);
-
-					#if openfl_pool_events
-					Event.__pool.release(selectEvent);
-					#end
+					dispatchEvent(new Event(Event.SELECT));
 				}
 			});
 			reader.readAsArrayBuffer(cast file);

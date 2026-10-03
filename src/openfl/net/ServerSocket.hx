@@ -64,7 +64,6 @@ import sys.net.Socket;
 @:fileXml('tags="haxe,release"')
 @:noDebug
 #end
-@:access(openfl.events.Event)
 @:access(openfl.net.Socket)
 class ServerSocket extends EventDispatcher
 {
@@ -276,19 +275,7 @@ class ServerSocket extends EventDispatcher
 		catch (e:Error)
 		{
 			close();
-
-			#if openfl_pool_events
-			var closeEvent = Event.__pool.get();
-			closeEvent.type = Event.CLOSE;
-			#else
-			var closeEvent = new Event(Event.CLOSE);
-			#end
-
-			dispatchEvent(closeEvent);
-
-			#if openfl_pool_events
-			Event.__pool.release(closeEvent);
-			#end
+			dispatchEvent(new Event(Event.CLOSE));
 		}
 		catch (e:Dynamic)
 		{

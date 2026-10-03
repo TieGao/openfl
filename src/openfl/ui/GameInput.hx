@@ -62,7 +62,6 @@ import lime.ui.GamepadButton;
 @:fileXml('tags="haxe,release"')
 @:noDebug
 #end
-@:access(openfl.events.Event)
 @:access(openfl.ui.GameInputControl)
 @:access(openfl.ui.GameInputDevice)
 @:final class GameInput extends EventDispatcher
@@ -163,19 +162,7 @@ import lime.ui.GamepadButton;
 
 			var control = device.__axis.get(axis);
 			control.value = value;
-
-			#if openfl_pool_events
-			var changeEvent = Event.__pool.get();
-			changeEvent.type = Event.CHANGE;
-			#else
-			var changeEvent = new Event(Event.CHANGE);
-			#end
-
-			control.dispatchEvent(changeEvent);
-
-			#if openfl_pool_events
-			Event.__pool.release(changeEvent);
-			#end
+			control.dispatchEvent(new Event(Event.CHANGE));
 		}
 	}
 	#end
@@ -197,19 +184,7 @@ import lime.ui.GamepadButton;
 
 			var control = device.__button.get(button);
 			control.value = 1;
-
-			#if openfl_pool_events
-			var changeEvent = Event.__pool.get();
-			changeEvent.type = Event.CHANGE;
-			#else
-			var changeEvent = new Event(Event.CHANGE);
-			#end
-
-			control.dispatchEvent(changeEvent);
-
-			#if openfl_pool_events
-			Event.__pool.release(changeEvent);
-			#end
+			control.dispatchEvent(new Event(Event.CHANGE));
 		}
 	}
 	#end
@@ -231,19 +206,7 @@ import lime.ui.GamepadButton;
 
 			var control = device.__button.get(button);
 			control.value = 0;
-
-			#if openfl_pool_events
-			var changeEvent = Event.__pool.get();
-			changeEvent.type = Event.CHANGE;
-			#else
-			var changeEvent = new Event(Event.CHANGE);
-			#end
-
-			control.dispatchEvent(changeEvent);
-
-			#if openfl_pool_events
-			Event.__pool.release(changeEvent);
-			#end
+			control.dispatchEvent(new Event(Event.CHANGE));
 		}
 	}
 	#end

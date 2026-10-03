@@ -41,8 +41,6 @@ class Context3DGraphics
 	private static var tempIndicesVector:Vector<Int> = new Vector<Int>();
 	private static var tempUvtVector:Vector<Float> = new Vector<Float>();
 	private static var tempScale9VerticesVector:Vector<Float>;
-	private static var renderOrHitTestReader:DrawCommandReader = new DrawCommandReader(null);
-	private static var buildBufferReader:DrawCommandReader = new DrawCommandReader(null);
 	private static var tempRects:Array<Rectangle> = [];
 
 	private static function buildBuffer(graphics:Graphics, renderer:OpenGLRenderer):Void
@@ -53,9 +51,7 @@ class Context3DGraphics
 		var vertexBufferPositionUVT = 0;
 		var bounds = graphics.__bounds;
 
-		var data = buildBufferReader;
-		data.reset();
-		data.buffer = graphics.__commands;
+		var data = new DrawCommandReader(graphics.__commands);
 
 		var context = renderer.__context3D;
 
@@ -93,13 +89,15 @@ class Context3DGraphics
 				{
 					if (isX)
 					{
-						tempScale9VerticesVector[i] = toScale9Position(vertices[i], scale9Grid.x, scale9Grid.width, bounds.width,
-							graphics.__owner.scaleX) / Math.abs(graphics.__owner.scaleX);
+						tempScale9VerticesVector[i] = bounds.x
+							+ (toScale9Position(vertices[i] - bounds.x, scale9Grid.x - bounds.x, scale9Grid.width, bounds.width,
+								graphics.__owner.scaleX) / Math.abs(graphics.__owner.scaleX));
 					}
 					else
 					{
-						tempScale9VerticesVector[i] = toScale9Position(vertices[i], scale9Grid.y, scale9Grid.height, bounds.height,
-							graphics.__owner.scaleY) / Math.abs(graphics.__owner.scaleY);
+						tempScale9VerticesVector[i] = bounds.y
+							+ (toScale9Position(vertices[i] - bounds.y, scale9Grid.y - bounds.y, scale9Grid.height, bounds.height,
+								graphics.__owner.scaleY) / Math.abs(graphics.__owner.scaleY));
 					}
 					i++;
 					isX = !isX;
@@ -307,7 +305,34 @@ class Context3DGraphics
 
 						ri = (hasIndices ? (indices[i] * 4) : i * 4);
 						if (ri < 0) continue;
-						tileRect.setTo(rects[ri], rects[ri + 1], rects[ri + 2], rects[ri + 3]);
+
+						if (hasScale9Grid)
+						{
+							var tileRectX = rects[ri];
+							var tileRectY = rects[ri + 1];
+							var tileRectWidth = rects[ri + 2];
+							var tileRectHeight = rects[ri + 3];
+							var scaledLeft = bounds.x
+								+ (toScale9Position(tileRectX - bounds.x, scale9Grid.x - bounds.x, scale9Grid.width, bounds.width,
+									graphics.__owner.scaleX) / graphics.__owner.scaleX);
+							var scaledTop = bounds.y
+								+ (toScale9Position(tileRectY - bounds.y, scale9Grid.y - bounds.y, scale9Grid.height, bounds.height,
+									graphics.__owner.scaleY) / graphics.__owner.scaleY);
+							var scaledRight = bounds.x
+								+ (toScale9Position(tileRectX + tileRectWidth - bounds.x, scale9Grid.x - bounds.x, scale9Grid.width, bounds.width,
+									graphics.__owner.scaleX) / graphics.__owner.scaleX);
+							var scaledBottom = bounds.y
+								+ (toScale9Position(tileRectY + tileRectHeight - bounds.y, scale9Grid.y - bounds.y, scale9Grid.height, bounds.height,
+									graphics.__owner.scaleY) / graphics.__owner.scaleY);
+
+							var scaledWidth = scaledRight - scaledLeft;
+							var scaledHeight = scaledBottom - scaledTop;
+							tileRect.setTo(scaledLeft, scaledTop, scaledWidth, scaledHeight);
+						}
+						else
+						{
+							tileRect.setTo(rects[ri], rects[ri + 1], rects[ri + 2], rects[ri + 3]);
+						}
 
 						tileWidth = tileRect.width;
 						tileHeight = tileRect.height;
@@ -556,10 +581,7 @@ class Context3DGraphics
 			return false;
 		}
 
-		var data = renderOrHitTestReader;
-		data.reset();
-		data.buffer = graphics.__commands;
-
+		var data = new DrawCommandReader(graphics.__commands);
 		var hasColorFill = false, hasBitmapFill = false, hasShaderFill = false;
 
 		// for each fill, allow drawing only shapes with no intersection because
@@ -761,9 +783,7 @@ class Context3DGraphics
 					scale9Grid = null;
 				}
 
-				var data = renderOrHitTestReader;
-				data.reset();
-				data.buffer = graphics.__commands;
+				var data = new DrawCommandReader(graphics.__commands);
 
 				var context = renderer.__context3D;
 				var gl = context.gl;
@@ -838,15 +858,10 @@ class Context3DGraphics
 							renderer.applyBitmapData(blankBitmapData, true, repeat);
 							#if lime
 							var color:ARGB = (fill : ARGB);
-							var worldColorTransform = graphics.__owner.__worldColorTransform;
-							tempColorTransform.redMultiplier = worldColorTransform.redMultiplier;
-							tempColorTransform.greenMultiplier = worldColorTransform.greenMultiplier;
-							tempColorTransform.blueMultiplier = worldColorTransform.blueMultiplier;
-							tempColorTransform.alphaMultiplier = worldColorTransform.alphaMultiplier;
-							tempColorTransform.redOffset = color.r * worldColorTransform.redMultiplier + worldColorTransform.redOffset;
-							tempColorTransform.greenOffset = color.g * worldColorTransform.greenMultiplier + worldColorTransform.greenOffset;
-							tempColorTransform.blueOffset = color.b * worldColorTransform.blueMultiplier + worldColorTransform.blueOffset;
-							tempColorTransform.alphaOffset = color.a * worldColorTransform.alphaMultiplier + worldColorTransform.alphaOffset;
+							tempColorTransform.redOffset = color.r;
+							tempColorTransform.greenOffset = color.g;
+							tempColorTransform.blueOffset = color.b;
+							tempColorTransform.__combine(graphics.__owner.__worldColorTransform);
 							renderer.applyAlpha((color.a / 0xFF) * graphics.__owner.__worldAlpha);
 							renderer.applyColorTransform(tempColorTransform);
 							#else
@@ -1004,15 +1019,10 @@ class Context3DGraphics
 									renderer.applyBitmapData(blankBitmapData, true, repeat);
 									#if lime
 									var color:ARGB = (fill : ARGB);
-									var worldColorTransform = graphics.__owner.__worldColorTransform;
-									tempColorTransform.redMultiplier = worldColorTransform.redMultiplier;
-									tempColorTransform.greenMultiplier = worldColorTransform.greenMultiplier;
-									tempColorTransform.blueMultiplier = worldColorTransform.blueMultiplier;
-									tempColorTransform.alphaMultiplier = worldColorTransform.alphaMultiplier;
-									tempColorTransform.redOffset = color.r * worldColorTransform.redMultiplier + worldColorTransform.redOffset;
-									tempColorTransform.greenOffset = color.g * worldColorTransform.greenMultiplier + worldColorTransform.greenOffset;
-									tempColorTransform.blueOffset = color.b * worldColorTransform.blueMultiplier + worldColorTransform.blueOffset;
-									tempColorTransform.alphaOffset = color.a * worldColorTransform.alphaMultiplier + worldColorTransform.alphaOffset;
+									tempColorTransform.redOffset = color.r;
+									tempColorTransform.greenOffset = color.g;
+									tempColorTransform.blueOffset = color.b;
+									tempColorTransform.__combine(graphics.__owner.__worldColorTransform);
 									renderer.applyAlpha((color.a / 0xFF) * graphics.__owner.__worldAlpha);
 									renderer.applyColorTransform(tempColorTransform);
 									#else
@@ -1100,14 +1110,17 @@ class Context3DGraphics
 
 								if (hasScale9Grid)
 								{
-									var scaledLeft = toScale9Position(c.x, scale9Grid.x, scale9Grid.width, bounds.width, graphics.__owner.scaleX);
-									var scaledTop = toScale9Position(c.y, scale9Grid.y, scale9Grid.height, bounds.height, graphics.__owner.scaleY);
-									var scaledRight = toScale9Position(c.x + c.width, scale9Grid.x, scale9Grid.width, bounds.width, graphics.__owner.scaleX);
-									var scaledBottom = toScale9Position(c.y + c.height, scale9Grid.y, scale9Grid.height, bounds.height,
+									var scaledLeft = toScale9Position(c.x - bounds.x, scale9Grid.x - bounds.x, scale9Grid.width, bounds.width,
+										graphics.__owner.scaleX);
+									var scaledTop = toScale9Position(c.y - bounds.y, scale9Grid.y - bounds.y, scale9Grid.height, bounds.height,
+										graphics.__owner.scaleY);
+									var scaledRight = toScale9Position(c.x + c.width - bounds.x, scale9Grid.x - bounds.x, scale9Grid.width, bounds.width,
+										graphics.__owner.scaleX);
+									var scaledBottom = toScale9Position(c.y + c.height - bounds.y, scale9Grid.y - bounds.y, scale9Grid.height, bounds.height,
 										graphics.__owner.scaleY);
 
-									x = scaledLeft / Math.abs(graphics.__owner.scaleX);
-									y = scaledTop / Math.abs(graphics.__owner.scaleY);
+									x = bounds.x + (scaledLeft / Math.abs(graphics.__owner.scaleX));
+									y = bounds.y + (scaledTop / Math.abs(graphics.__owner.scaleY));
 									width = (scaledRight - scaledLeft) / Math.abs(graphics.__owner.scaleX);
 									height = (scaledBottom - scaledTop) / Math.abs(graphics.__owner.scaleY);
 								}
@@ -1124,15 +1137,10 @@ class Context3DGraphics
 								renderer.applyBitmapData(blankBitmapData, true, repeat);
 								#if lime
 								var color:ARGB = (fill : ARGB);
-								var worldColorTransform = graphics.__owner.__worldColorTransform;
-								tempColorTransform.redMultiplier = worldColorTransform.redMultiplier;
-								tempColorTransform.greenMultiplier = worldColorTransform.greenMultiplier;
-								tempColorTransform.blueMultiplier = worldColorTransform.blueMultiplier;
-								tempColorTransform.alphaMultiplier = worldColorTransform.alphaMultiplier;
-								tempColorTransform.redOffset = color.r * worldColorTransform.redMultiplier + worldColorTransform.redOffset;
-								tempColorTransform.greenOffset = color.g * worldColorTransform.greenMultiplier + worldColorTransform.greenOffset;
-								tempColorTransform.blueOffset = color.b * worldColorTransform.blueMultiplier + worldColorTransform.blueOffset;
-								tempColorTransform.alphaOffset = color.a * worldColorTransform.alphaMultiplier + worldColorTransform.alphaOffset;
+								tempColorTransform.redOffset = color.r;
+								tempColorTransform.greenOffset = color.g;
+								tempColorTransform.blueOffset = color.b;
+								tempColorTransform.__combine(graphics.__owner.__worldColorTransform);
 								renderer.applyAlpha((color.a / 0xFF) * graphics.__owner.__worldAlpha);
 								renderer.applyColorTransform(tempColorTransform);
 								#else

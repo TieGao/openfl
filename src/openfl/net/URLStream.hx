@@ -69,7 +69,6 @@ import openfl.utils.Endian;
 @:fileXml('tags="haxe,release"')
 @:noDebug
 #end
-@:access(openfl.events.Event)
 class URLStream extends EventDispatcher implements IDataInput
 {
 	/**
@@ -606,33 +605,8 @@ class URLStream extends EventDispatcher implements IDataInput
 		__removeEventListeners();
 		__data = __loader.data;
 
-		#if openfl_pool_events
-		var progressEvent = ProgressEvent.__pool.get();
-		progressEvent.type = ProgressEvent.PROGRESS;
-		progressEvent.bytesLoaded = __loader.bytesLoaded;
-		progressEvent.bytesTotal = __loader.bytesTotal;
-		#else
-		var progressEvent = new ProgressEvent(ProgressEvent.PROGRESS, false, false, __loader.bytesLoaded, __loader.bytesTotal);
-		#end
-
-		dispatchEvent(progressEvent);
-
-		#if openfl_pool_events
-		ProgressEvent.__pool.release(progressEvent);
-		#end
-
-		#if openfl_pool_events
-		var completeEvent = Event.__pool.get();
-		completeEvent.type = Event.COMPLETE;
-		#else
-		var completeEvent = new Event(Event.COMPLETE);
-		#end
-
-		dispatchEvent(completeEvent);
-
-		#if openfl_pool_events
-		Event.__pool.release(completeEvent);
-		#end
+		dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS, false, false, __loader.bytesLoaded, __loader.bytesTotal));
+		dispatchEvent(new Event(Event.COMPLETE));
 	}
 
 	@:noCompletion private function loader_onIOError(event:IOErrorEvent):Void

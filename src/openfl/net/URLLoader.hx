@@ -94,7 +94,6 @@ import lime.net.HTTPRequestHeader;
 @:fileXml('tags="haxe,release"')
 @:noDebug
 #end
-@:access(openfl.events.Event)
 class URLLoader extends EventDispatcher
 {
 	/**
@@ -292,18 +291,8 @@ class URLLoader extends EventDispatcher
 	public function load(request:URLRequest):Void
 	{
 		#if (lime && !macro)
-		#if openfl_pool_events
-		var openEvent = Event.__pool.get();
-		openEvent.type = Event.OPEN;
-		#else
-		var openEvent = new Event(Event.OPEN);
-		#end
-
+		var openEvent:Event = new Event(Event.OPEN);
 		dispatchEvent(openEvent);
-
-		#if openfl_pool_events
-		Event.__pool.release(openEvent);
-		#end
 
 		if (dataFormat == BINARY)
 		{
@@ -319,18 +308,8 @@ class URLLoader extends EventDispatcher
 					__dispatchStatus();
 					this.data = data;
 
-					#if openfl_pool_events
-					var completeEvent = Event.__pool.get();
-					completeEvent.type = Event.COMPLETE;
-					#else
-					var completeEvent = new Event(Event.COMPLETE);
-					#end
-
-					dispatchEvent(completeEvent);
-
-					#if openfl_pool_events
-					Event.__pool.release(completeEvent);
-					#end
+					var event = new Event(Event.COMPLETE);
+					dispatchEvent(event);
 				});
 		}
 		else
@@ -355,18 +334,8 @@ class URLLoader extends EventDispatcher
 						this.data = data;
 					}
 
-					#if openfl_pool_events
-					var completeEvent = Event.__pool.get();
-					completeEvent.type = Event.COMPLETE;
-					#else
-					var completeEvent = new Event(Event.COMPLETE);
-					#end
-
-					dispatchEvent(completeEvent);
-
-					#if openfl_pool_events
-					Event.__pool.release(completeEvent);
-					#end
+					var event = new Event(Event.COMPLETE);
+					dispatchEvent(event);
 				});
 		}
 		#end
@@ -490,20 +459,10 @@ class URLLoader extends EventDispatcher
 
 	@:noCompletion private function httpRequest_onProgress(bytesLoaded:Int, bytesTotal:Int):Void
 	{
-		#if openfl_pool_events
-		var progressEvent = ProgressEvent.__pool.get();
-		progressEvent.type = ProgressEvent.PROGRESS;
-		progressEvent.bytesLoaded = bytesLoaded;
-		progressEvent.bytesTotal = bytesTotal;
-		#else
-		var progressEvent = new ProgressEvent(ProgressEvent.PROGRESS, false, false, bytesLoaded, bytesTotal);
-		#end
-
-		dispatchEvent(progressEvent);
-
-		#if openfl_pool_events
-		ProgressEvent.__pool.release(progressEvent);
-		#end
+		var event = new ProgressEvent(ProgressEvent.PROGRESS);
+		event.bytesLoaded = bytesLoaded;
+		event.bytesTotal = bytesTotal;
+		dispatchEvent(event);
 	}
 }
 #else

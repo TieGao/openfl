@@ -97,7 +97,6 @@ import lime.media.AudioSource;
 #end
 @:access(lime.media.AudioBuffer)
 @:access(lime.utils.AssetLibrary)
-@:access(openfl.events.Event)
 @:access(openfl.media.SoundMixer)
 @:access(openfl.media.SoundChannel)
 @:autoBuild(openfl.utils._internal.AssetsMacro.embedSound())
@@ -501,18 +500,7 @@ class Sound extends EventDispatcher
 		__urlLoading = true;
 
 		#if lime
-		#if openfl_pool_events
-		var openEvent = Event.__pool.get();
-		openEvent.type = Event.OPEN;
-		#else
-		var openEvent = new Event(Event.OPEN);
-		#end
-
-		dispatchEvent(openEvent);
-
-		#if openfl_pool_events
-		Event.__pool.release(openEvent);
-		#end
+		dispatchEvent(new Event(Event.OPEN));
 
 		#if (js && html5)
 		var defaultLibrary = lime.utils.Assets.getLibrary("default"); // TODO: Improve this
@@ -579,46 +567,9 @@ class Sound extends EventDispatcher
 		}
 		else
 		{
-			#if openfl_pool_events
-			var openEvent = Event.__pool.get();
-			openEvent.type = Event.OPEN;
-			#else
-			var openEvent = new Event(Event.OPEN);
-			#end
-
-			dispatchEvent(openEvent);
-
-			#if openfl_pool_events
-			Event.__pool.release(openEvent);
-			#end
-
-			#if openfl_pool_events
-			var progressEvent = ProgressEvent.__pool.get();
-			progressEvent.type = ProgressEvent.PROGRESS;
-			progressEvent.bytesLoaded = bytes.length;
-			progressEvent.bytesTotal = bytes.length;
-			#else
-			var progressEvent = new ProgressEvent(ProgressEvent.PROGRESS, false, false, bytes.length, bytes.length);
-			#end
-
-			dispatchEvent(progressEvent);
-
-			#if openfl_pool_events
-			ProgressEvent.__pool.release(progressEvent);
-			#end
-
-			#if openfl_pool_events
-			var completeEvent = Event.__pool.get();
-			completeEvent.type = Event.COMPLETE;
-			#else
-			var completeEvent = new Event(Event.COMPLETE);
-			#end
-
-			dispatchEvent(completeEvent);
-
-			#if openfl_pool_events
-			Event.__pool.release(completeEvent);
-			#end
+			dispatchEvent(new Event(Event.OPEN));
+			dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS, false, false, bytes.length, bytes.length));
+			dispatchEvent(new Event(Event.COMPLETE));
 		}
 		#else
 		dispatchEvent(new IOErrorEvent(IOErrorEvent.IO_ERROR));
@@ -717,46 +668,9 @@ class Sound extends EventDispatcher
 
 		__buffer = audioBuffer;
 
-		#if openfl_pool_events
-		var openEvent = Event.__pool.get();
-		openEvent.type = Event.OPEN;
-		#else
-		var openEvent = new Event(Event.OPEN);
-		#end
-
-		dispatchEvent(openEvent);
-
-		#if openfl_pool_events
-		Event.__pool.release(openEvent);
-		#end
-
-		#if openfl_pool_events
-		var progressEvent = ProgressEvent.__pool.get();
-		progressEvent.type = ProgressEvent.PROGRESS;
-		progressEvent.bytesLoaded = bytes.length;
-		progressEvent.bytesTotal = bytes.length;
-		#else
-		var progressEvent = new ProgressEvent(ProgressEvent.PROGRESS, false, false, bytes.length, bytes.length);
-		#end
-
-		dispatchEvent(progressEvent);
-
-		#if openfl_pool_events
-		ProgressEvent.__pool.release(progressEvent);
-		#end
-
-		#if openfl_pool_events
-		var completeEvent = Event.__pool.get();
-		completeEvent.type = Event.COMPLETE;
-		#else
-		var completeEvent = new Event(Event.COMPLETE);
-		#end
-
-		dispatchEvent(completeEvent);
-
-		#if openfl_pool_events
-		Event.__pool.release(completeEvent);
-		#end
+		dispatchEvent(new Event(Event.OPEN));
+		dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS, false, false, bytes.length, bytes.length));
+		dispatchEvent(new Event(Event.COMPLETE));
 		#else
 		dispatchEvent(new IOErrorEvent(IOErrorEvent.IO_ERROR));
 		#end
@@ -916,35 +830,8 @@ class Sound extends EventDispatcher
 			{
 				byteLength = __buffer.data.length;
 			}
-
-			#if openfl_pool_events
-			var progressEvent = ProgressEvent.__pool.get();
-			progressEvent.type = ProgressEvent.PROGRESS;
-			progressEvent.bytesLoaded = byteLength;
-			progressEvent.bytesTotal = byteLength;
-			#else
-			var progressEvent = new ProgressEvent(ProgressEvent.PROGRESS, false, false, byteLength, byteLength);
-			#end
-
-			dispatchEvent(progressEvent);
-
-			#if openfl_pool_events
-			ProgressEvent.__pool.release(progressEvent);
-			#end
-
-			#if openfl_pool_events
-			var completeEvent = Event.__pool.get();
-			completeEvent.type = Event.COMPLETE;
-			#else
-			var completeEvent = new Event(Event.COMPLETE);
-			#end
-
-			dispatchEvent(completeEvent);
-
-			#if openfl_pool_events
-			Event.__pool.release(completeEvent);
-			#end
-
+			dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS, false, false, byteLength, byteLength));
+			dispatchEvent(new Event(Event.COMPLETE));
 			if (__pendingSoundChannel != null)
 			{
 				__pendingAudioSource.buffer = __buffer;
@@ -960,20 +847,10 @@ class Sound extends EventDispatcher
 
 	@:noCompletion private function AudioBuffer_onURLProgress(bytesLoaded:Int, bytesTotal:Int)
 	{
-		#if openfl_pool_events
-		var progressEvent = ProgressEvent.__pool.get();
-		progressEvent.type = ProgressEvent.PROGRESS;
+		var progressEvent = new ProgressEvent(ProgressEvent.PROGRESS);
 		progressEvent.bytesLoaded = bytesLoaded;
 		progressEvent.bytesTotal = bytesTotal;
-		#else
-		var progressEvent = new ProgressEvent(ProgressEvent.PROGRESS, false, false, bytesLoaded, bytesTotal);
-		#end
-
 		dispatchEvent(progressEvent);
-
-		#if openfl_pool_events
-		ProgressEvent.__pool.release(progressEvent);
-		#end
 	}
 	#end
 }

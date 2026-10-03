@@ -620,7 +620,7 @@ class Loader extends DisplayObjectContainer
 		// the following work-around
 		if (child == content)
 		{
-			return __removeChild(content);
+			return super.removeChild(content);
 		}
 		else
 		{
@@ -674,7 +674,7 @@ class Loader extends DisplayObjectContainer
 		{
 			if (content != null && content.parent == this)
 			{
-				__removeChild(content);
+				super.removeChild(content);
 			}
 
 			if (__library != null)
@@ -693,18 +693,7 @@ class Loader extends DisplayObjectContainer
 			contentLoaderInfo.height = 0;
 			__unloaded = true;
 
-			#if openfl_pool_events
-			var unloadEvent = Event.__pool.get();
-			unloadEvent.type = Event.UNLOAD;
-			#else
-			var unloadEvent = new Event(Event.UNLOAD);
-			#end
-
-			contentLoaderInfo.dispatchEvent(unloadEvent);
-
-			#if openfl_pool_events
-			Event.__pool.release(unloadEvent);
-			#end
+			contentLoaderInfo.dispatchEvent(new Event(Event.UNLOAD));
 		}
 	}
 
@@ -742,9 +731,9 @@ class Loader extends DisplayObjectContainer
 			content.__stopAllMovieClips();
 		}
 
-		for (i in 0...__children.length)
+		for (i in 0...numChildren)
 		{
-			__children[i].__stopAllMovieClips();
+			getChildAt(i).__stopAllMovieClips();
 		}
 
 		unload();
@@ -795,20 +784,9 @@ class Loader extends DisplayObjectContainer
 			contentLoaderInfo.height = Std.int(content.height);
 		}
 
-		__addChildAt(content, 0);
+		super.addChildAt(content, 0);
 
-		#if openfl_pool_events
-		var completeEvent = Event.__pool.get();
-		completeEvent.type = Event.COMPLETE;
-		#else
-		var completeEvent = new Event(Event.COMPLETE);
-		#end
-
-		contentLoaderInfo.dispatchEvent(completeEvent);
-
-		#if openfl_pool_events
-		Event.__pool.release(completeEvent);
-		#end
+		contentLoaderInfo.dispatchEvent(new Event(Event.COMPLETE));
 	}
 
 	@SuppressWarnings("checkstyle:Dynamic")
@@ -821,20 +799,10 @@ class Loader extends DisplayObjectContainer
 
 	@:noCompletion private function Loader_onProgress(bytesLoaded:Int, bytesTotal:Int):Void
 	{
-		#if openfl_pool_events
-		var progressEvent = ProgressEvent.__pool.get();
-		progressEvent.type = ProgressEvent.PROGRESS;
-		progressEvent.bytesLoaded = bytesLoaded;
-		progressEvent.bytesTotal = bytesTotal;
-		#else
-		var progressEvent = new ProgressEvent(ProgressEvent.PROGRESS, false, false, bytesLoaded, bytesTotal);
-		#end
-
-		dispatchEvent(progressEvent);
-
-		#if openfl_pool_events
-		ProgressEvent.__pool.release(progressEvent);
-		#end
+		var event = new ProgressEvent(ProgressEvent.PROGRESS);
+		event.bytesLoaded = bytesLoaded;
+		event.bytesTotal = bytesTotal;
+		contentLoaderInfo.dispatchEvent(event);
 	}
 }
 #else

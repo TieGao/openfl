@@ -1,8 +1,6 @@
 package openfl.system;
 
 #if !flash
-import openfl.Lib;
-
 /**
 	The ApplicationDomain class is a container for discrete groups of class
 	definitions. Application domains are used to partition classes that are in
@@ -94,11 +92,7 @@ import openfl.Lib;
 	**/
 	public function getDefinition(name:String):Class<Dynamic>
 	{
-		if (parentDomain != null)
-		{
-			return null;
-		}
-		return Lib.getDefinitionByName(name);
+		return Type.resolveClass(name);
 	}
 
 	// @:noCompletion @:dox(hide) @:require(flash11_3) function getQualifiedDefinitionNames() : openfl.Vector<String>;
@@ -114,11 +108,7 @@ import openfl.Lib;
 	**/
 	public function hasDefinition(name:String):Bool
 	{
-		if (parentDomain != null)
-		{
-			return false;
-		}
-		return Lib.getDefinitionByName(name) != null;
+		return (Type.resolveClass(name) != null);
 	}
 }
 #else

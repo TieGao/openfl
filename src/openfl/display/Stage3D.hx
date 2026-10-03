@@ -66,7 +66,6 @@ import js.Browser;
 @:access(openfl.display.Bitmap)
 @:access(openfl.display.BitmapData)
 @:access(openfl.display.Stage)
-@:access(openfl.events.Event)
 class Stage3D extends EventDispatcher
 {
 	@:noCompletion private static var __active:Bool;
@@ -414,19 +413,7 @@ class Stage3D extends EventDispatcher
 		if (__contextRequested)
 		{
 			__contextRequested = false;
-
-			#if openfl_pool_events
-			var context3DCreateEvent = Event.__pool.get();
-			context3DCreateEvent.type = Event.CONTEXT3D_CREATE;
-			#else
-			var context3DCreateEvent = new Event(Event.CONTEXT3D_CREATE);
-			#end
-
-			dispatchEvent(context3DCreateEvent);
-
-			#if openfl_pool_events
-			Event.__pool.release(context3DCreateEvent);
-			#end
+			dispatchEvent(new Event(Event.CONTEXT3D_CREATE));
 		}
 	}
 

@@ -38,7 +38,6 @@ import lime.utils.Int16Array;
 @:fileXml('tags="haxe,release"')
 @:noDebug
 #end
-@:access(openfl.events.Event)
 @:access(openfl.events.SampleDataEvent)
 @:access(openfl.media.Sound)
 @:access(openfl.media.SoundMixer)
@@ -207,19 +206,7 @@ import lime.utils.Int16Array;
 				openfl.Lib.setTimeout(function():Void
 				{
 					stop();
-
-					#if openfl_pool_events
-					var soundCompleteEvent = Event.__pool.get();
-					soundCompleteEvent.type = Event.SOUND_COMPLETE;
-					#else
-					var soundCompleteEvent = new Event(Event.SOUND_COMPLETE);
-					#end
-
-					dispatchEvent(soundCompleteEvent);
-
-					#if openfl_pool_events
-					Event.__pool.release(soundCompleteEvent);
-					#end
+					dispatchEvent(new Event(Event.SOUND_COMPLETE));
 				}, 1);
 			}
 			else
@@ -249,19 +236,7 @@ import lime.utils.Int16Array;
 				openfl.Lib.setTimeout(function():Void
 				{
 					stop();
-
-					#if openfl_pool_events
-					var soundCompleteEvent = Event.__pool.get();
-					soundCompleteEvent.type = Event.SOUND_COMPLETE;
-					#else
-					var soundCompleteEvent = new Event(Event.SOUND_COMPLETE);
-					#end
-
-					dispatchEvent(soundCompleteEvent);
-
-					#if openfl_pool_events
-					Event.__pool.release(soundCompleteEvent);
-					#end
+					dispatchEvent(new Event(Event.SOUND_COMPLETE));
 				}, 1);
 			}
 			else
@@ -387,19 +362,7 @@ import lime.utils.Int16Array;
 		SoundMixer.__unregisterSoundChannel(this);
 
 		__dispose();
-
-		#if openfl_pool_events
-		var soundCompleteEvent = Event.__pool.get();
-		soundCompleteEvent.type = Event.SOUND_COMPLETE;
-		#else
-		var soundCompleteEvent = new Event(Event.SOUND_COMPLETE);
-		#end
-
-		dispatchEvent(soundCompleteEvent);
-
-		#if openfl_pool_events
-		Event.__pool.release(soundCompleteEvent);
-		#end
+		dispatchEvent(new Event(Event.SOUND_COMPLETE));
 	}
 
 	#if (js && html5)
@@ -424,19 +387,7 @@ import lime.utils.Int16Array;
 		else
 		{
 			stop();
-
-			#if openfl_pool_events
-			var soundCompleteEvent = Event.__pool.get();
-			soundCompleteEvent.type = Event.SOUND_COMPLETE;
-			#else
-			var soundCompleteEvent = new Event(Event.SOUND_COMPLETE);
-			#end
-
-			dispatchEvent(soundCompleteEvent);
-
-			#if openfl_pool_events
-			Event.__pool.release(soundCompleteEvent);
-			#end
+			dispatchEvent(new Event(Event.SOUND_COMPLETE));
 		}
 	}
 	#end
@@ -464,7 +415,8 @@ import lime.utils.Int16Array;
 					else
 					{
 						__sampleDataEvent.getSamples(__outputBuffer);
-						alAudioContext.bufferData(__emptyBuffers[a], AL.FORMAT_STEREO16, __bufferView, __sampleDataEvent.getBufferSize() * 4, 44100);
+						alAudioContext.bufferData(__emptyBuffers[a], AL.FORMAT_STEREO16, __bufferView, __sampleDataEvent.getBufferSize() * 4,
+							44100);
 						alAudioContext.sourceQueueBuffer(__alSource, __emptyBuffers[a]);
 					}
 				}
@@ -478,19 +430,7 @@ import lime.utils.Int16Array;
 		if (!hasSampleData)
 		{
 			stop();
-
-			#if openfl_pool_events
-			var soundCompleteEvent = Event.__pool.get();
-			soundCompleteEvent.type = Event.SOUND_COMPLETE;
-			#else
-			var soundCompleteEvent = new Event(Event.SOUND_COMPLETE);
-			#end
-
-			dispatchEvent(soundCompleteEvent);
-
-			#if openfl_pool_events
-			Event.__pool.release(soundCompleteEvent);
-			#end
+			dispatchEvent(new Event(Event.SOUND_COMPLETE));
 		}
 	}
 	#end

@@ -120,7 +120,6 @@ import js.html.DivElement;
 #end
 @:access(openfl.display.Graphics)
 @:access(openfl.errors.Error)
-@:access(openfl.events.Event)
 @:access(openfl.geom.ColorTransform)
 @:access(openfl.geom.Matrix)
 @:access(openfl.geom.Rectangle)
@@ -627,28 +626,6 @@ class TextField extends InteractiveObject
 	public var textColor(get, set):Int;
 
 	/**
-		The color of the text within the selection range in a text field, in
-		hexadecimal format. The hexadecimal color system uses six digits to
-		represent color values. Each digit has 16 possible values or characters.
-		The characters range from 0-9 and then A-F. For example, black is
-		`0x000000`; white is `0xFFFFFF`.
-
-		@default 0xffffff
-	**/
-	public var selectionTextColor(get, set):Int;
-
-	/**
-		The color of the highlight that appears around the text within the
-		selection range in a text field, in hexadecimal format. The hexadecimal
-		color system uses six digits to represent color values. Each digit has
-		16 possible values or characters. The characters range from 0-9 and then
-		A-F. For example, black is `0x000000`; white is `0xFFFFFF`.
-
-		@default 0(0x000000)
-	**/
-	public var selectionHighlightColor(get, set):Int;
-
-	/**
 		The height of the text in pixels.
 	**/
 	public var textHeight(get, never):Float;
@@ -851,14 +828,6 @@ class TextField extends InteractiveObject
 				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_textColor (v); }")
 			},
 			"textHeight": {get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_textHeight (); }")},
-			"selectionHighlightColor": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_selectionHighlightColor (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_selectionHighlightColor (v); }")
-			},
-			"selectionTextColor": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_selectionTextColor (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_selectionTextColor (v); }")
-			},
 			"textWidth": {get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_textWidth (); }")},
 			"type": {
 				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_type (); }"),
@@ -2847,18 +2816,11 @@ class TextField extends InteractiveObject
 	@:noCompletion private override function get_height():Float
 	{
 		__updateLayout();
-		return __textEngine.height * Math.abs(__scaleY);
+		return __textEngine.height * Math.abs(scaleY);
 	}
 
 	@:noCompletion private override function set_height(value:Float):Float
 	{
-		if (value < 0.0)
-		{
-			// ignore negative values completely, and keep the current size
-			// negative values may be achieved by setting scaleY, though
-			return __textEngine.height * Math.abs(__scaleY);
-		}
-
 		if (value != __textEngine.height)
 		{
 			__setTransformDirty();
@@ -2869,7 +2831,7 @@ class TextField extends InteractiveObject
 			__textEngine.height = value;
 		}
 
-		return __textEngine.height * Math.abs(__scaleY);
+		return __textEngine.height * Math.abs(scaleY);
 	}
 
 	@:noCompletion private function get_htmlText():String
@@ -3045,19 +3007,7 @@ class TextField extends InteractiveObject
 			__dirty = true;
 			__setRenderDirty();
 			__textEngine.scrollH = value;
-
-			#if openfl_pool_events
-			var scrollEvent = Event.__pool.get();
-			scrollEvent.type = Event.SCROLL;
-			#else
-			var scrollEvent = new Event(Event.SCROLL);
-			#end
-
-			dispatchEvent(scrollEvent);
-
-			#if openfl_pool_events
-			Event.__pool.release(scrollEvent);
-			#end
+			dispatchEvent(new Event(Event.SCROLL));
 		}
 
 		return __textEngine.scrollH;
@@ -3080,19 +3030,7 @@ class TextField extends InteractiveObject
 			__dirty = true;
 			__setRenderDirty();
 			__textEngine.scrollV = value;
-
-			#if openfl_pool_events
-			var scrollEvent = Event.__pool.get();
-			scrollEvent.type = Event.SCROLL;
-			#else
-			var scrollEvent = new Event(Event.SCROLL);
-			#end
-
-			dispatchEvent(scrollEvent);
-
-			#if openfl_pool_events
-			Event.__pool.release(scrollEvent);
-			#end
+			dispatchEvent(new Event(Event.SCROLL));
 		}
 
 		return __textEngine.scrollV;
@@ -3250,42 +3188,6 @@ class TextField extends InteractiveObject
 		return __textFormat.color = value;
 	}
 
-	@:noCompletion private var __selectionHighlightColor:Int = 0x000000;
-
-	@:noCompletion private function get_selectionHighlightColor():Int
-	{
-		return __selectionHighlightColor;
-	}
-
-	@:noCompletion private function set_selectionHighlightColor(value:Int):Int
-	{
-		if (value != __selectionHighlightColor)
-		{
-			__dirty = true;
-			__setRenderDirty();
-		}
-
-		return __selectionHighlightColor = value;
-	}
-
-	@:noCompletion private var __selectionTextColor:Int = 0xffffff;
-
-	@:noCompletion private function get_selectionTextColor():Int
-	{
-		return __selectionTextColor;
-	}
-
-	@:noCompletion private function set_selectionTextColor(value:Int):Int
-	{
-		if (value != __selectionTextColor)
-		{
-			__dirty = true;
-			__setRenderDirty();
-		}
-
-		return __selectionTextColor = value;
-	}
-
 	@:noCompletion private function get_textWidth():Float
 	{
 		__updateLayout();
@@ -3340,21 +3242,14 @@ class TextField extends InteractiveObject
 		return __textEngine.type;
 	}
 
-	@:noCompletion override private function get_width():Float
+	override private function get_width():Float
 	{
 		__updateLayout();
 		return __textEngine.width * Math.abs(__scaleX);
 	}
 
-	@:noCompletion override private function set_width(value:Float):Float
+	override private function set_width(value:Float):Float
 	{
-		if (value < 0.0)
-		{
-			// ignore negative values completely, and keep the current size
-			// negative values may be achieved by setting scaleX, though
-			return __textEngine.width * Math.abs(__scaleX);
-		}
-
 		if (value != __textEngine.width)
 		{
 			__setTransformDirty();
@@ -3506,25 +3401,15 @@ class TextField extends InteractiveObject
 				{
 					upPos = __getPositionByIdentifier(mouseX + scrollH, mouseY, false);
 				}
-				// The range must cover the selection this double or triple click ALREADY
-				// made on mouse down, not just one end of it. `this_onMouseDown` finishes
-				// with `setSelection(__caretIndex, __selectionIndex)`, and setSelection
-				// assigns `__selectionIndex = begin` and `__caretIndex = end`, so by the
-				// time we get here `__selectionIndex` is the LEFT edge of the word. On a
-				// double click with no drag, `upPos` is that same left edge, so
-				// min(left, left) and max(left, left) both collapse to it and the word
-				// that was selected on mouse down is thrown away on mouse up.
-				//
-				// Taking both ends keeps the word and still extends it when the pointer
-				// has been dragged past either side, which is what this block is for.
-				var loSel:Int = Std.int(Math.min(__selectionIndex, __caretIndex));
-				var hiSel:Int = Std.int(Math.max(__selectionIndex, __caretIndex));
-				var leftPos:Int = Std.int(Math.min(loSel, upPos));
-				var rightPos:Int = Std.int(Math.max(hiSel, upPos));
+				var leftPos:Int = Std.int(Math.min(__selectionIndex, upPos));
+				var rightPos:Int = Std.int(Math.max(__selectionIndex, upPos));
 
 				__selectionIndex = leftPos;
 				__caretIndex = rightPos;
 			}
+
+			__wordSelection = false;
+			__lineSelection = false;
 
 			if (__inputEnabled)
 			{
@@ -3541,15 +3426,6 @@ class TextField extends InteractiveObject
 				#end
 			}
 		}
-
-		// OUTSIDE the focus test, deliberately. Everything above is guarded by
-		// `stage.focus == this`, and a TextField wrapped by a component library is often
-		// not what holds stage focus, so these flags could stay true after the click that
-		// set them and make the NEXT single click take the word or line branch. They
-		// describe this one gesture and nothing else, so they are cleared whichever
-		// object has focus.
-		__wordSelection = false;
-		__lineSelection = false;
 	}
 
 	@:noCompletion private function this_onAddedToStage(event:Event):Void
@@ -3694,19 +3570,7 @@ class TextField extends InteractiveObject
 					{
 						__replaceSelectedText("\n", true);
 
-						#if openfl_pool_events
-						var changeEvent = Event.__pool.get();
-						changeEvent.type = Event.CHANGE;
-						changeEvent.bubbles = true;
-						#else
-						var changeEvent = new Event(Event.CHANGE, true);
-						#end
-
-						dispatchEvent(changeEvent);
-
-						#if openfl_pool_events
-						Event.__pool.release(changeEvent);
-						#end
+						dispatchEvent(new Event(Event.CHANGE, true));
 					}
 				}
 				else
@@ -3726,19 +3590,7 @@ class TextField extends InteractiveObject
 					replaceSelectedText("");
 					__selectionIndex = __caretIndex;
 
-					#if openfl_pool_events
-					var changeEvent = Event.__pool.get();
-					changeEvent.type = Event.CHANGE;
-					changeEvent.bubbles = true;
-					#else
-					var changeEvent = new Event(Event.CHANGE, true);
-					#end
-
-					dispatchEvent(changeEvent);
-
-					#if openfl_pool_events
-					Event.__pool.release(changeEvent);
-					#end
+					dispatchEvent(new Event(Event.CHANGE, true));
 				}
 				else
 				{
@@ -3757,19 +3609,7 @@ class TextField extends InteractiveObject
 					replaceSelectedText("");
 					__selectionIndex = __caretIndex;
 
-					#if openfl_pool_events
-					var changeEvent = Event.__pool.get();
-					changeEvent.type = Event.CHANGE;
-					changeEvent.bubbles = true;
-					#else
-					var changeEvent = new Event(Event.CHANGE, true);
-					#end
-
-					dispatchEvent(changeEvent);
-
-					#if openfl_pool_events
-					Event.__pool.release(changeEvent);
-					#end
+					dispatchEvent(new Event(Event.CHANGE, true));
 				}
 				else
 				{
@@ -3899,20 +3739,7 @@ class TextField extends InteractiveObject
 						Clipboard.text = __text.substring(__caretIndex, __selectionIndex);
 
 						replaceSelectedText("");
-
-						#if openfl_pool_events
-						var changeEvent = Event.__pool.get();
-						changeEvent.type = Event.CHANGE;
-						changeEvent.bubbles = true;
-						#else
-						var changeEvent = new Event(Event.CHANGE, true);
-						#end
-
-						dispatchEvent(changeEvent);
-
-						#if openfl_pool_events
-						Event.__pool.release(changeEvent);
-						#end
+						dispatchEvent(new Event(Event.CHANGE, true));
 					}
 				}
 				#end
@@ -3933,19 +3760,7 @@ class TextField extends InteractiveObject
 						{
 							__replaceSelectedText(clipboardText, true);
 
-							#if openfl_pool_events
-							var changeEvent = Event.__pool.get();
-							changeEvent.type = Event.CHANGE;
-							changeEvent.bubbles = true;
-							#else
-							var changeEvent = new Event(Event.CHANGE, true);
-							#end
-
-							dispatchEvent(changeEvent);
-
-							#if openfl_pool_events
-							Event.__pool.release(changeEvent);
-							#end
+							dispatchEvent(new Event(Event.CHANGE, true));
 						}
 					}
 				}
@@ -3973,19 +3788,7 @@ class TextField extends InteractiveObject
 		__replaceSelectedText(value, true);
 
 		// TODO: Dispatch change if at max chars?
-		#if openfl_pool_events
-		var changeEvent = Event.__pool.get();
-		changeEvent.type = Event.CHANGE;
-		changeEvent.bubbles = true;
-		#else
-		var changeEvent = new Event(Event.CHANGE, true);
-		#end
-
-		dispatchEvent(changeEvent);
-
-		#if openfl_pool_events
-		Event.__pool.release(changeEvent);
-		#end
+		dispatchEvent(new Event(Event.CHANGE, true));
 	}
 }
 #else

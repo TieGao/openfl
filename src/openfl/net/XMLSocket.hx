@@ -87,7 +87,6 @@ import openfl.utils.ByteArray;
 @:fileXml('tags="haxe,release"')
 @:noDebug
 #end
-@:access(openfl.events.Event)
 class XMLSocket extends EventDispatcher
 {
 	/**
@@ -249,55 +248,18 @@ class XMLSocket extends EventDispatcher
 	@:noCompletion private function __onClose(_):Void
 	{
 		connected = false;
-
-		#if openfl_pool_events
-		var closeEvent = Event.__pool.get();
-		closeEvent.type = Event.CLOSE;
-		#else
-		var closeEvent = new Event(Event.CLOSE);
-		#end
-
-		dispatchEvent(closeEvent);
-
-		#if openfl_pool_events
-		Event.__pool.release(closeEvent);
-		#end
+		dispatchEvent(new Event(Event.CLOSE));
 	}
 
 	@:noCompletion private function __onConnect(_):Void
 	{
 		connected = true;
-
-		#if openfl_pool_events
-		var connectEvent = Event.__pool.get();
-		connectEvent.type = Event.CONNECT;
-		#else
-		var connectEvent = new Event(Event.CONNECT);
-		#end
-
-		dispatchEvent(connectEvent);
-
-		#if openfl_pool_events
-		Event.__pool.release(connectEvent);
-		#end
+		dispatchEvent(new Event(Event.CONNECT));
 	}
 
 	@:noCompletion private function __onError(_):Void
 	{
-		// TODO: should this be an IOErrorEvent instead of an Event?
-		// if not, then we should add a comment explaining why
-		#if openfl_pool_events
-		var ioErrorEvent = Event.__pool.get();
-		ioErrorEvent.type = IOErrorEvent.IO_ERROR;
-		#else
-		var ioErrorEvent = new Event(IOErrorEvent.IO_ERROR);
-		#end
-
-		dispatchEvent(ioErrorEvent);
-
-		#if openfl_pool_events
-		Event.__pool.release(ioErrorEvent);
-		#end
+		dispatchEvent(new Event(IOErrorEvent.IO_ERROR));
 	}
 
 	@:noCompletion private function __onSocketData(_):Void

@@ -311,7 +311,6 @@ import js.Browser;
 @:fileXml('tags="haxe,release"')
 @:noDebug
 #end
-@:access(openfl.events.Event)
 class FileReference extends EventDispatcher
 {
 	/**
@@ -623,18 +622,7 @@ class FileReference extends EventDispatcher
 		{
 			if (__inputControl.files.length == 0)
 			{
-				#if openfl_pool_events
-				var cancelEvent = Event.__pool.get();
-				cancelEvent.type = Event.CANCEL;
-				#else
-				var cancelEvent = new Event(Event.CANCEL);
-				#end
-
-				dispatchEvent(cancelEvent);
-
-				#if openfl_pool_events
-				Event.__pool.release(cancelEvent);
-				#end
+				dispatchEvent(new Event(Event.CANCEL));
 				return;
 			}
 			var file = __inputControl.files[0];
@@ -644,19 +632,7 @@ class FileReference extends EventDispatcher
 			type = "." + Path.extension(file.name);
 			name = Path.withoutDirectory(file.name);
 			__path = file.name;
-
-			#if openfl_pool_events
-			var selectEvent = Event.__pool.get();
-			selectEvent.type = Event.SELECT;
-			#else
-			var selectEvent = new Event(Event.SELECT);
-			#end
-
-			dispatchEvent(selectEvent);
-
-			#if openfl_pool_events
-			Event.__pool.release(selectEvent);
-			#end
+			dispatchEvent(new Event(Event.SELECT));
 		}
 		__inputControl.click();
 		return true;
@@ -1468,34 +1444,12 @@ class FileReference extends EventDispatcher
 	// Event Handlers
 	@:noCompletion private function openFileDialog_onCancel():Void
 	{
-		#if openfl_pool_events
-		var cancelEvent = Event.__pool.get();
-		cancelEvent.type = Event.CANCEL;
-		#else
-		var cancelEvent = new Event(Event.CANCEL);
-		#end
-
-		dispatchEvent(cancelEvent);
-
-		#if openfl_pool_events
-		Event.__pool.release(cancelEvent);
-		#end
+		dispatchEvent(new Event(Event.CANCEL));
 	}
 
 	@:noCompletion private function openFileDialog_onComplete():Void
 	{
-		#if openfl_pool_events
-		var completeEvent = Event.__pool.get();
-		completeEvent.type = Event.COMPLETE;
-		#else
-		var completeEvent = new Event(Event.COMPLETE);
-		#end
-
-		dispatchEvent(completeEvent);
-
-		#if openfl_pool_events
-		Event.__pool.release(completeEvent);
-		#end
+		dispatchEvent(new Event(Event.COMPLETE));
 	}
 
 	@:noCompletion private function openFileDialog_onSelect(path:String):Void
@@ -1511,52 +1465,19 @@ class FileReference extends EventDispatcher
 		name = Path.withoutDirectory(path);
 		__path = path;
 
-		#if openfl_pool_events
-		var selectEvent = Event.__pool.get();
-		selectEvent.type = Event.SELECT;
-		#else
-		var selectEvent = new Event(Event.SELECT);
-		#end
-
-		dispatchEvent(selectEvent);
-
-		#if openfl_pool_events
-		Event.__pool.release(selectEvent);
-		#end
+		dispatchEvent(new Event(Event.SELECT));
 	}
 
 	@:noCompletion private function saveFileDialog_onCancel():Void
 	{
-		#if openfl_pool_events
-		var cancelEvent = Event.__pool.get();
-		cancelEvent.type = Event.CANCEL;
-		#else
-		var cancelEvent = new Event(Event.CANCEL);
-		#end
-
-		dispatchEvent(cancelEvent);
-
-		#if openfl_pool_events
-		Event.__pool.release(cancelEvent);
-		#end
+		dispatchEvent(new Event(Event.CANCEL));
 	}
 
 	@:noCompletion private function saveFileDialog_onSave(path:String):Void
 	{
 		Timer.delay(function()
 		{
-			#if openfl_pool_events
-			var completeEvent = Event.__pool.get();
-			completeEvent.type = Event.COMPLETE;
-			#else
-			var completeEvent = new Event(Event.COMPLETE);
-			#end
-
-			dispatchEvent(completeEvent);
-
-			#if openfl_pool_events
-			Event.__pool.release(completeEvent);
-			#end
+			dispatchEvent(new Event(Event.COMPLETE));
 		}, 1);
 	}
 
@@ -1578,18 +1499,7 @@ class FileReference extends EventDispatcher
 		}
 		#end
 
-		#if openfl_pool_events
-		var selectEvent = Event.__pool.get();
-		selectEvent.type = Event.SELECT;
-		#else
-		var selectEvent = new Event(Event.SELECT);
-		#end
-
-		dispatchEvent(selectEvent);
-
-		#if openfl_pool_events
-		Event.__pool.release(selectEvent);
-		#end
+		dispatchEvent(new Event(Event.SELECT));
 	}
 
 	@:noCompletion private function urlLoader_download_onComplete(event:Event):Void
@@ -1641,18 +1551,7 @@ class FileReference extends EventDispatcher
 		{
 			// httpStatus is not dispatched if upload is successful
 			// instead complete is dispatched
-			#if openfl_pool_events
-			var completeEvent = Event.__pool.get();
-			completeEvent.type = Event.COMPLETE;
-			#else
-			var completeEvent = new Event(Event.COMPLETE);
-			#end
-
-			dispatchEvent(completeEvent);
-
-			#if openfl_pool_events
-			Event.__pool.release(completeEvent);
-			#end
+			dispatchEvent(new Event(Event.COMPLETE));
 		}
 		else if (event.status != 0)
 		{

@@ -1,9 +1,5 @@
 package openfl.events;
 
-#if openfl_pool_events
-import openfl.utils.ObjectPool;
-#end
-
 #if !flash
 // import openfl.utils.ObjectPool;
 /**
@@ -101,10 +97,8 @@ class ProgressEvent extends Event
 	**/
 	public var bytesTotal:Float;
 
-	#if openfl_pool_events
-	@:noCompletion private static var __pool:ObjectPool<ProgressEvent> = new ObjectPool<ProgressEvent>(function() return new ProgressEvent(null),
-		function(event) event.__init());
-	#end
+	// @:noCompletion private static var __pool:ObjectPool<ProgressEvent> = new ObjectPool<ProgressEvent>(function() return new ProgressEvent(null),
+	// function(event) event.__init());
 
 	/**
 		Creates an Event object that contains information about progress events.
