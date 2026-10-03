@@ -220,6 +220,10 @@ class CanvasTextField
 
 						context.font = TextEngine.getFont(group.format);
 						context.fillStyle = color;
+						if (textEngine.__useLetterSpacing)
+						{
+							Reflect.setField(context, "letterSpacing", group.format.letterSpacing + "px");
+						}
 
 						context.fillText(text.substring(group.startIndex, group.endIndex), group.offsetX
 							+ scrollX
@@ -309,9 +313,9 @@ class CanvasTextField
 
 								if (start != null && end != null)
 								{
-									context.fillStyle = "#000000";
+									context.fillStyle = "#" + StringTools.hex(textField.selectionHighlightColor & 0xFFFFFF, 6);
 									context.fillRect(start.x + scrollX - bounds.x, start.y + scrollY, end.x - start.x, group.height);
-									context.fillStyle = "#FFFFFF";
+									context.fillStyle = "#" + StringTools.hex(textField.selectionTextColor & 0xFFFFFF, 6);
 
 									// TODO: fill only once
 

@@ -106,6 +106,7 @@ class TextEngine
 	// @:noCompletion private var __tileDataLength:Map<Tilesheet, Int>;
 	// @:noCompletion private var __tilesheets:Map<Tilesheet, Bool>;
 	private var __useIntAdvances:Null<Bool>;
+	private var __useLetterSpacing:Null<Bool>;
 
 	@SuppressWarnings("checkstyle:Dynamic") @:noCompletion @:dox(hide) public var __cairoFont:#if lime CairoFontFace #else Dynamic #end;
 	@:noCompletion @:dox(hide) public var __font:Font;
@@ -296,7 +297,11 @@ class TextEngine
 
 		// don't add 4 to bounds.width and bounds.height here because the + 4
 		// is already included from a previous calculation
-		textBounds.setTo(Math.max(x - 2, 0), Math.max(y - 2, 0), Math.min(textWidth + 4, bounds.width), Math.min(textHeight + 4, bounds.height));
+		var textBoundsX = Math.max(x - 2, 0);
+		var textBoundsY = Math.max(y - 2, 0);
+		var textBoundsWidth = Math.max(Math.min(textWidth + 4, bounds.width - textBoundsX), 0);
+		var textBoundsHeight = Math.max(Math.min(textHeight + 4, bounds.height - textBoundsY), 0);
+		textBounds.setTo(textBoundsX, textBoundsY, textBoundsWidth, textBoundsHeight);
 	}
 
 	private static function initializeDefaultFonts():Void
@@ -694,6 +699,8 @@ class TextEngine
 		textHeight = 0;
 		numLines = 1;
 		maxScrollH = 0;
+		var textWidthWithWhitespace = 0.0;
+		var currentLineWidthWithWhitespace = 0.0;
 
 		var lastIndex = layoutGroups.length - 1;
 		for (i in 0...layoutGroups.length)
@@ -712,13 +719,14 @@ class TextEngine
 				lineDescents.push(currentLineDescent);
 				lineLeadings.push(currentLineLeading != null ? currentLineLeading : 0);
 				lineHeights.push(currentLineHeight);
-				lineWidths.push(currentLineWidth);
+				lineWidths.push(currentLineWidthWithWhitespace);
 
 				currentLineAscent = 0;
 				currentLineDescent = 0;
 				currentLineLeading = null;
 				currentLineHeight = 0;
 				currentLineWidth = 0;
+				currentLineWidthWithWhitespace = 0;
 
 				numLines++;
 			}
@@ -736,11 +744,32 @@ class TextEngine
 			}
 
 			currentLineHeight = Math.max(currentLineHeight, group.height);
-			currentLineWidth = group.offsetX - 2 + group.width;
+			currentLineWidth = group.width + group.offsetX - 2;
+			if (group.format.leftMargin != null)
+			{
+				currentLineWidth -= group.format.leftMargin;
+			}
+			if (group.format.blockIndent != null)
+			{
+				currentLineWidth -= group.format.blockIndent;
+			}
+			if (group.firstLineOfParagraph && group.format.indent != null)
+			{
+				currentLineWidth -= group.format.indent;
+			}
+			currentLineWidthWithWhitespace = group.width + group.offsetX - 2;
+			if (autoSize != NONE && group.format.rightMargin != null)
+			{
+				currentLineWidthWithWhitespace += group.format.rightMargin;
+			}
 
 			if (currentLineWidth > textWidth)
 			{
 				textWidth = currentLineWidth;
+			}
+			if (currentLineWidthWithWhitespace > textWidthWithWhitespace)
+			{
+				textWidthWithWhitespace = currentLineWidthWithWhitespace;
 			}
 
 			currentTextHeight = Math.ceil(group.offsetY - 2 + group.ascent + group.descent);
@@ -798,7 +827,7 @@ class TextEngine
 		lineDescents.push(currentLineDescent);
 		lineLeadings.push(currentLineLeading != null ? currentLineLeading : 0);
 		lineHeights.push(currentLineHeight);
-		lineWidths.push(currentLineWidth);
+		lineWidths.push(currentLineWidthWithWhitespace);
 
 		if (numLines == 1)
 		{
@@ -813,9 +842,9 @@ class TextEngine
 			switch (autoSize)
 			{
 				case LEFT, RIGHT, CENTER:
-					if (!wordWrap /*&& (width < textWidth + 4)*/)
+					if (!wordWrap /*&& (width < textWidthWithWhitespace + 4)*/)
 					{
-						width = textWidth + 4;
+						width = textWidthWithWhitespace + 4;
 					}
 
 					height = textHeight + 4;
@@ -825,9 +854,9 @@ class TextEngine
 			}
 		}
 
-		if (textWidth > width - 4)
+		if (textWidthWithWhitespace > width - 4)
 		{
-			maxScrollH = Std.int(textWidth - width + 4); // TODO: incorrect
+			maxScrollH = Std.int(textWidthWithWhitespace - width + 4); // TODO: incorrect
 		}
 		else
 		{
@@ -902,6 +931,11 @@ class TextEngine
 					__useIntAdvances = ~/Trident\/7.0/.match(Browser.navigator.userAgent); // IE
 				}
 
+				if (__useLetterSpacing == null)
+				{
+					__useLetterSpacing = js.Lib.typeof(untyped __context.letterSpacing) != "undefined";
+				}
+
 				if (__useIntAdvances)
 				{
 					// slower, but more accurate if browser returns Int measurements
@@ -912,9 +946,11 @@ class TextEngine
 					for (i in startIndex...endIndex)
 					{
 						width = measureText(text.substring(startIndex, i + 1));
-						// if (i > 0) width += letterSpacing;
 
-						positions.push(width - previousWidth);
+						var advance = width - previousWidth;
+						if (__useLetterSpacing && i > 0) advance += letterSpacing;
+
+						positions.push(advance);
 
 						previousWidth = width;
 					}
@@ -937,7 +973,7 @@ class TextEngine
 							advance = __context.measureText(text.charAt(i)).width;
 						}
 
-						// if (i > 0) advance += letterSpacing;
+						if (__useLetterSpacing && i > 0) advance += letterSpacing;
 
 						positions.push(advance);
 					}
@@ -1231,6 +1267,7 @@ class TextEngine
 				layoutGroup.descent = descent;
 				layoutGroup.leading = leading;
 				layoutGroup.lineIndex = lineIndex;
+				layoutGroup.firstLineOfParagraph = firstLineOfParagraph;
 				layoutGroup.offsetY = offsetY + GUTTER;
 				layoutGroup.width = widthValue;
 				layoutGroup.height = heightValue;
@@ -1265,6 +1302,7 @@ class TextEngine
 						layoutGroup.descent = descent;
 						layoutGroup.leading = leading;
 						layoutGroup.lineIndex = lineIndex;
+						layoutGroup.firstLineOfParagraph = firstLineOfParagraph;
 						layoutGroup.offsetY = offsetY + GUTTER;
 						layoutGroup.width = widthValue;
 						layoutGroup.height = heightValue;
@@ -1615,6 +1653,7 @@ class TextEngine
 								layoutGroup.offsetX -= bumpX;
 								layoutGroup.offsetY = offsetY + GUTTER;
 								layoutGroup.lineIndex = lineIndex;
+								layoutGroup.firstLineOfParagraph = firstLineOfParagraph;
 								offsetX += layoutGroup.width;
 							}
 						}
@@ -1746,6 +1785,7 @@ class TextEngine
 			layoutGroup.descent = descent;
 			layoutGroup.leading = leading;
 			layoutGroup.lineIndex = lineIndex;
+			layoutGroup.firstLineOfParagraph = firstLineOfParagraph;
 			layoutGroup.offsetX = getBaseX(); // TODO: double check it doesn't default to GUTTER or something
 			layoutGroup.offsetY = offsetY + GUTTER;
 			layoutGroup.width = 0;

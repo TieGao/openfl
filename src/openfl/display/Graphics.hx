@@ -109,9 +109,7 @@ import js.html.CanvasRenderingContext2D;
 		__strokePadding = 0;
 		__positionX = 0;
 		__positionY = 0;
-		__renderTransform = new Matrix();
 		__usedShaderBuffers = new List<ShaderBuffer>();
-		__worldTransform = new Matrix();
 		__width = 0;
 		__height = 0;
 
@@ -919,8 +917,8 @@ import js.html.CanvasRenderingContext2D;
 			}
 			else
 			{
-				tileTransform.tx = rects[ri];
-				tileTransform.ty = rects[ri + 1];
+				tileTransform.tx = tileRect.x;
+				tileTransform.ty = tileRect.y;
 			}
 
 			tileRect.__transform(tileRect, tileTransform);
@@ -1924,10 +1922,12 @@ import js.html.CanvasRenderingContext2D;
 
 		var scaleX = pixelRatio, scaleY = pixelRatio;
 
-		#if (openfl_force_hw_graphics || force_hw_graphics)
-		var calculateScale = true;
-		#else
+		#if (openfl_legacy_scale9grid && lime_cairo && !cairo && !openfl_force_hw_graphics && !force_hw_graphics)
 		var calculateScale = __owner.__worldScale9Grid == null;
+		#elseif (openfl_legacy_scale9grid && lime_canvas && !canvas && !openfl_force_hw_graphics && !force_hw_graphics)
+		var calculateScale = __owner.__worldScale9Grid == null;
+		#else
+		var calculateScale = true;
 		#end
 		if (calculateScale)
 		{
@@ -1970,15 +1970,6 @@ import js.html.CanvasRenderingContext2D;
 				}
 			}
 		}
-		#if (!openfl_legacy_scale9grid && !openfl_force_hw_graphics && !force_hw_graphics)
-		else // has scale9Grid
-		{
-			// same as __bitmapScaleX and __bitmapScaleY, but they may not have
-			// been updated by CairoGraphics and CanvasGraphics yet.
-			scaleX = Math.abs(__owner.scaleX) * pixelRatio;
-			scaleY = Math.abs(__owner.scaleY) * pixelRatio;
-		}
-		#end
 
 		#if openfl_disable_graphics_upscaling
 		if (__owner.__worldScale9Grid == null)
@@ -2013,6 +2004,16 @@ import js.html.CanvasRenderingContext2D;
 
 		var inverseA:Float;
 		var inverseD:Float;
+
+		if (__renderTransform == null)
+		{
+			__renderTransform = new Matrix();
+		}
+
+		if (__worldTransform == null)
+		{
+			__worldTransform = new Matrix();
+		}
 
 		if (__owner.__worldScale9Grid != null)
 		{

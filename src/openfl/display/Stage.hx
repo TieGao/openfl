@@ -1119,6 +1119,7 @@ class Stage extends DisplayObjectContainer #if lime implements IModule #end
 		}
 
 		this.stage = this;
+		__root = this;
 
 		align = StageAlign.TOP_LEFT;
 		allowsFullScreen = true;
@@ -1232,7 +1233,7 @@ class Stage extends DisplayObjectContainer #if lime implements IModule #end
 
 		if (Lib.current.stage == null)
 		{
-			stage.addChild(Lib.current);
+			stage.__addChild(Lib.current);
 		}
 
 		#if commonjs
@@ -1240,7 +1241,7 @@ class Stage extends DisplayObjectContainer #if lime implements IModule #end
 		{
 			DisplayObject.__initStage = this;
 			var sprite:Sprite = cast Type.createInstance(documentClass, []);
-			// addChild (sprite); // done by init stage
+			// __addChild (sprite); // done by init stage
 			sprite.dispatchEvent(new Event(Event.ADDED_TO_STAGE, false, false));
 		}
 
@@ -1249,6 +1250,9 @@ class Stage extends DisplayObjectContainer #if lime implements IModule #end
 			app.addModule(this);
 			app.exec();
 		}
+
+		Lib.current.__loaderInfo.dispatchEvent(new openfl.events.Event(openfl.events.Event.INIT));
+		Lib.current.__loaderInfo.dispatchEvent(new openfl.events.Event(openfl.events.Event.COMPLETE));
 		#end
 	}
 
@@ -1873,16 +1877,16 @@ class Stage extends DisplayObjectContainer #if lime implements IModule #end
 								var currentParent = current.parent;
 								if (currentParent != null && currentParent.tabChildren)
 								{
-									var currentIndex = currentParent.getChildIndex(current);
+									var currentIndex = currentParent.__children.indexOf(current);
 									if (currentIndex == -1)
 									{
 										current = currentParent;
 										continue;
 									}
 									var i = currentIndex + nextOffset;
-									while (modifier.shiftKey ? (i >= 0) : (i < currentParent.numChildren))
+									while (modifier.shiftKey ? (i >= 0) : (i < currentParent.__children.length))
 									{
-										var sibling = currentParent.getChildAt(i);
+										var sibling = currentParent.__children[i];
 										if ((sibling is InteractiveObject))
 										{
 											var interactiveSibling = cast(sibling, InteractiveObject);
@@ -1988,17 +1992,65 @@ class Stage extends DisplayObjectContainer #if lime implements IModule #end
 							case Keyboard.C:
 								// flash docs say that bubbles and cancelable
 								// are false, but they're actually true
+								#if openfl_pool_events
+								var copyEvent = Event.__pool.get();
+								copyEvent.type = Event.COPY;
+								copyEvent.bubbles = true;
+								copyEvent.cancelable = true;
+								#else
 								var copyEvent = new Event(Event.COPY, true, true);
+								#end
+
 								focus.dispatchEvent(copyEvent);
+
+								#if openfl_pool_events
+								Event.__pool.release(copyEvent);
+								#end
 							case Keyboard.X:
+								#if openfl_pool_events
+								var cutEvent = Event.__pool.get();
+								cutEvent.type = Event.CUT;
+								cutEvent.bubbles = true;
+								cutEvent.cancelable = true;
+								#else
 								var cutEvent = new Event(Event.CUT, true, true);
+								#end
+
 								focus.dispatchEvent(cutEvent);
+
+								#if openfl_pool_events
+								Event.__pool.release(cutEvent);
+								#end
 							case Keyboard.V:
+								#if openfl_pool_events
+								var pasteEvent = Event.__pool.get();
+								pasteEvent.type = Event.PASTE;
+								pasteEvent.bubbles = true;
+								pasteEvent.cancelable = true;
+								#else
 								var pasteEvent = new Event(Event.PASTE, true, true);
+								#end
+
 								focus.dispatchEvent(pasteEvent);
+
+								#if openfl_pool_events
+								Event.__pool.release(pasteEvent);
+								#end
 							case Keyboard.A:
+								#if openfl_pool_events
+								var selectAllEvent = Event.__pool.get();
+								selectAllEvent.type = Event.SELECT_ALL;
+								selectAllEvent.bubbles = true;
+								selectAllEvent.cancelable = true;
+								#else
 								var selectAllEvent = new Event(Event.SELECT_ALL, true, true);
+								#end
+
 								focus.dispatchEvent(selectAllEvent);
+
+								#if openfl_pool_events
+								Event.__pool.release(selectAllEvent);
+								#end
 						}
 					}
 				}

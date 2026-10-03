@@ -36,6 +36,8 @@ class DrawCommandBuffer
 
 	public function new()
 	{
+		copyOnWrite = true;
+
 		if (empty == null)
 		{
 			types = [];
@@ -46,8 +48,6 @@ class DrawCommandBuffer
 			o = [];
 			ff = [];
 			ii = [];
-
-			copyOnWrite = true;
 		}
 		else
 		{
@@ -131,9 +131,6 @@ class DrawCommandBuffer
 				case MOVE_TO:
 					var c = data.readMoveTo();
 					moveTo(c.x, c.y);
-				case MOVE_TO_INTERNAL:
-					var c = data.readMoveToInternal();
-					moveToInternal(c.moveX, c.moveY, c.fillX, c.fillY);
 				case OVERRIDE_MATRIX:
 					var c = data.readOverrideMatrix();
 					overrideMatrix(c.matrix);
@@ -231,6 +228,26 @@ class DrawCommandBuffer
 
 	public function clear():Void
 	{
+		#if haxe4
+		if (!copyOnWrite)
+		{
+			// if these arrays have already been copied, then we should be able
+			// to reuse them instead of creating new copies. this will result in
+			// fewer temporary objects that need to be garbage collected
+
+			types.resize(0);
+
+			b.resize(0);
+			i.resize(0);
+			f.resize(0);
+			o.resize(0);
+			ff.resize(0);
+			ii.resize(0);
+
+			return;
+		}
+		#end
+
 		types = empty.types;
 
 		b = empty.b;
@@ -454,17 +471,6 @@ class DrawCommandBuffer
 		types.push(MOVE_TO);
 		f.push(x);
 		f.push(y);
-	}
-
-	public function moveToInternal(moveX:Float, moveY:Float, fillX:Float, fillY:Float):Void
-	{
-		prepareWrite();
-
-		types.push(MOVE_TO_INTERNAL);
-		f.push(moveX);
-		f.push(moveY);
-		f.push(fillX);
-		f.push(fillY);
 	}
 
 	private function prepareWrite():Void

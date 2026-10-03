@@ -28,6 +28,7 @@ import lime.utils.ArrayBuffer;
 import lime.utils.BytePointer;
 import lime.utils.Bytes as LimeBytes;
 import lime.utils.DataPointer;
+import lime.utils.Int8Array;
 #end
 
 /**
@@ -577,6 +578,9 @@ abstract ByteArray(ByteArrayData) from ByteArrayData to ByteArrayData
 		Reads a multibyte string of specified length from the byte stream using
 		the specified character set.
 
+		_OpenFL target support:_ Supported by the HTML5, Flash, and AIR targets.
+		Not currently supported by native targets.
+
 		@param length  The number of bytes from the byte stream to read.
 		@param charSet The string denoting the character set to use to interpret
 					   the bytes. Possible character set strings include
@@ -958,6 +962,8 @@ abstract ByteArray(ByteArrayData) from ByteArrayData to ByteArrayData
 		Writes a multibyte string to the byte stream using the specified character
 		set.
 
+		_OpenFL target support:_ Not currently supported, except when targeting Flash or AIR.
+
 		@param value   The string value to be written.
 		@param charSet The string denoting the character set to use. Possible
 					   character set strings include `"shift-jis"`,
@@ -1136,6 +1142,7 @@ abstract ByteArray(ByteArrayData) from ByteArrayData to ByteArrayData
 @:noDebug
 #end
 @SuppressWarnings("checkstyle:FieldDocComment")
+@:meta(JSDynamicOverride(getMethod = "get", setMethod = "set"))
 @:autoBuild(lime._internal.macros.AssetsMacro.embedByteArray())
 @:noCompletion @:dox(hide) class ByteArrayData extends Bytes implements IDataInput implements IDataOutput
 {
@@ -1435,7 +1442,50 @@ abstract ByteArray(ByteArrayData) from ByteArrayData to ByteArrayData
 
 	public function readMultiByte(length:Int, charSet:String):String
 	{
+		#if js
+		if (position + length > __length)
+		{
+			throw new EOFError();
+		}
+		try
+		{
+			var decoder = new js.html.TextDecoder(charSet, {fatal: true});
+
+			// decode reads the full ArrayBuffer, so if we're starting from a
+			// greater than 0, or we need to read fewer characters than the
+			// total length of the existig buffer, we need to make a copy to
+			// pass to the TextDecoder
+			var arrayBuffer:ArrayBuffer = null;
+			if (position == 0)
+			{
+				arrayBuffer = (this : Bytes).getData();
+				// the ArrayBuffer may actually be longer than the length of the
+				// ByteArray, so we may still need to make a copy
+				if (arrayBuffer.byteLength > length)
+				{
+					arrayBuffer = arrayBuffer.slice(0, length);
+				}
+			}
+			else
+			{
+				arrayBuffer = new ArrayBuffer(length);
+				var int8Array = new Int8Array(arrayBuffer);
+				for (i in 0...length)
+				{
+					var byte = this.readByte();
+					int8Array[i] = byte;
+				}
+			}
+			return decoder.decode(arrayBuffer);
+		}
+		catch (e:Dynamic)
+		{
+			// when a charset isn't supported, fall back to UTF
+			return readUTFBytes(length);
+		}
+		#else
 		return readUTFBytes(length);
+		#end
 	}
 
 	public function readObject():Dynamic
@@ -1696,6 +1746,17 @@ abstract ByteArray(ByteArrayData) from ByteArrayData to ByteArrayData
 
 	public function writeMultiByte(value:String, charSet:String):Void
 	{
+		// for JS, while we can use TextDecoder to read many different charsets
+		// in readMultiByte(), the matching TextEncoder supports utf-8 only.
+		if (charSet != "utf-8")
+		{
+			// if the charset isn't recognized, write all question marks
+			for (i in 0...value.length)
+			{
+				writeByte(0x3f);
+			}
+			return;
+		}
 		writeUTFBytes(value);
 	}
 

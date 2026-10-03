@@ -652,6 +652,8 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 	**/
 	public var parent(default, null):DisplayObjectContainer;
 
+	@:noCompletion private var __root:DisplayObject;
+
 	/**
 		For a display object in a loaded SWF file, the `root` property
 		is the top-most display object in the portion of the display list's tree
@@ -1157,8 +1159,9 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 		if (__initStage != null)
 		{
 			this.stage = __initStage;
+			__root = this;
 			__initStage = null;
-			this.stage.addChild(this);
+			this.stage.__addChild(this);
 		}
 	}
 
@@ -1198,6 +1201,17 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 
 	public override function dispatchEvent(event:Event):Bool
 	{
+		if (event.__dispatching)
+		{
+			// if the event is already dispatching, it may still need to be
+			// passed to more of the original listeners. to redispatch without
+			// affecting the state of the event object that is passed those
+			// remaining original listeners, we need to create a clone that has
+			// its own distinct state.
+			event = event.clone();
+		}
+		event.__dispatching = true;
+
 		if ((event is MouseEvent))
 		{
 			var mouseEvent:MouseEvent = cast event;
@@ -1213,7 +1227,9 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 
 		event.target = this;
 
-		return __dispatchWithCapture(event);
+		var result = __dispatchWithCapture(event);
+		event.__dispatching = false;
+		return result;
 	}
 
 	/**
@@ -1808,6 +1824,30 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 	@:noCompletion private function __setStageReference(stage:Stage):Void
 	{
 		this.stage = stage;
+
+		if (stage != null)
+		{
+			if (Lib.current == this && parent == stage)
+			{
+				__root = this;
+			}
+			else if (parent != null)
+			{
+				__root = parent.__root;
+			}
+			else if (__renderParent != null)
+			{
+				__root = __renderParent.__root;
+			}
+			else
+			{
+				__root = null;
+			}
+		}
+		else
+		{
+			__root = null;
+		}
 	}
 
 	@:noCompletion private function __setTransformDirty():Void
@@ -2217,22 +2257,18 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 
 	@:noCompletion private function get_mouseX():Float
 	{
-		var stage = this.stage != null ? this.stage : Lib.current.stage;
-		if (stage == null)
-		{
-			return 0.0;
-		}
-		return __getRenderTransform().__transformInverseX(stage.__mouseX, stage.__mouseY);
+		var mouseX = (stage != null ? stage.__mouseX : Lib.current.stage.__mouseX);
+		var mouseY = (stage != null ? stage.__mouseY : Lib.current.stage.__mouseY);
+
+		return __getRenderTransform().__transformInverseX(mouseX, mouseY);
 	}
 
 	@:noCompletion private function get_mouseY():Float
 	{
-		var stage = this.stage != null ? this.stage : Lib.current.stage;
-		if (stage == null)
-		{
-			return 0.0;
-		}
-		return __getRenderTransform().__transformInverseY(stage.__mouseX, stage.__mouseY);
+		var mouseX = (stage != null ? stage.__mouseX : Lib.current.stage.__mouseX);
+		var mouseY = (stage != null ? stage.__mouseY : Lib.current.stage.__mouseY);
+
+		return __getRenderTransform().__transformInverseY(mouseX, mouseY);
 	}
 
 	@:noCompletion private function get_name():String
@@ -2247,12 +2283,7 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 
 	@:noCompletion private function get_root():DisplayObject
 	{
-		if (stage != null)
-		{
-			return Lib.current;
-		}
-
-		return null;
+		return __root;
 	}
 
 	@:keep @:noCompletion private function get_rotation():Float
