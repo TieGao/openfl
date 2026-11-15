@@ -2881,40 +2881,6 @@ import lime.math.Vector2;
 		return new ASTCTexture(this, data);
 	}
 
-	public function setProgramConstantsFromArray(programType:Context3DProgramType, firstRegister:Int, data:Array<Float>, numRegisters:Int = -1):Void
-	{
-		if (numRegisters == 0) return;
-
-		if (__state.program != null && __state.program.__format == GLSL) {}
-		else
-		{
-			if (numRegisters == -1)
-			{
-				numRegisters = (data.length >> 2);
-			}
-
-			var isVertex = (programType == VERTEX);
-			var dest = isVertex ? __vertexConstants : __fragmentConstants;
-			var source = data;
-
-			var sourceIndex = 0;
-			var destIndex = firstRegister * 4;
-
-			for (i in 0...numRegisters)
-			{
-				dest[destIndex++] = source[sourceIndex++];
-				dest[destIndex++] = source[sourceIndex++];
-				dest[destIndex++] = source[sourceIndex++];
-				dest[destIndex++] = source[sourceIndex++];
-			}
-
-			if (__state.program != null)
-			{
-				__state.program.__markDirty(isVertex, firstRegister, numRegisters);
-			}
-		}
-	}
-
 	public function createMultiBufferTexture(width:Int, height:Int, formats:Array<Context3DTextureFormat>):MultiBufferTexture
 	{
 		return new MultiBufferTexture(this, width, height, formats);
