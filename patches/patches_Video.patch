@@ -1,0 +1,13 @@
+diff --git a/src/openfl/media/Video.hx b/src/openfl/media/Video.hx
+index 22687463e..09a863285 100644
+--- a/src/openfl/media/Video.hx
++++ b/src/openfl/media/Video.hx
+@@ -274,7 +274,7 @@ class Video extends DisplayObject
+ 	**/
+ 	public function clear():Void {}
+ 
+-	@:noCompletion private override function __enterFrame(deltaTime:Int):Void
++	@:noCompletion private override function __enterFrame(deltaTime:Float):Void
+ 	{
+ 		#if (js && html5)
+ 		if (__renderable && __stream != null)
