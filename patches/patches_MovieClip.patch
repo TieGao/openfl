@@ -1,0 +1,13 @@
+diff --git a/src/openfl/display/MovieClip.hx b/src/openfl/display/MovieClip.hx
+index 169539fe0..623d43234 100644
+--- a/src/openfl/display/MovieClip.hx
++++ b/src/openfl/display/MovieClip.hx
+@@ -354,7 +354,7 @@ class MovieClip extends Sprite #if (openfl_dynamic && haxe_ver < "4.0.0") implem
+ 		}
+ 	}
+ 
+-	@:noCompletion private override function __enterFrame(deltaTime:Int):Void
++	@:noCompletion private override function __enterFrame(deltaTime:Float):Void
+ 	{
+ 		if (__timeline != null)
+ 		{

@@ -1,0 +1,13 @@
+diff --git a/src/openfl/display/Tilemap.hx b/src/openfl/display/Tilemap.hx
+index e6d0eca3d..00e20ac6b 100644
+--- a/src/openfl/display/Tilemap.hx
++++ b/src/openfl/display/Tilemap.hx
+@@ -376,7 +376,7 @@ class Tilemap extends #if !flash DisplayObject #else Bitmap implements IDisplayO
+ 	}
+ 
+ 	#if !flash
+-	@:noCompletion private override function __enterFrame(deltaTime:Int):Void
++	@:noCompletion private override function __enterFrame(deltaTime:Float):Void
+ 	{
+ 		if (__group.__dirty)
+ 		{

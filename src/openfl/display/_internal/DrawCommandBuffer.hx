@@ -1,5 +1,7 @@
 package openfl.display._internal;
 
+import openfl.display3D.Context3DCompareMode;
+
 #if !flash
 import openfl.display.BitmapData;
 import openfl.display.BlendMode;
@@ -134,8 +136,10 @@ class DrawCommandBuffer
 				case MOVE_TO_INTERNAL:
 					var c = data.readMoveToInternal();
 					moveToInternal(c.moveX, c.moveY, c.fillX, c.fillY);
-				case OVERRIDE_MATRIX:
-					var c = data.readOverrideMatrix();
+				case OVERRIDE_DEPTH_TEST:
+					var c = data.readOverrideDepthTest();
+					overrideDepthTest(c.depthTest, c.compareMode);
+				case OVERRIDE_MATRIX:					var c = data.readOverrideMatrix();
 					overrideMatrix(c.matrix);
 				case WINDING_EVEN_ODD:
 					var c = data.readWindingEvenOdd();
@@ -554,6 +558,15 @@ class DrawCommandBuffer
 	private function get_length():Int
 	{
 		return types.length;
+	}
+
+	public inline function overrideDepthTest(depthTest:Bool, compareMode:Context3DCompareMode):Void
+	{
+		prepareWrite();
+
+		types.push(OVERRIDE_DEPTH_TEST);
+		b.push(depthTest);
+		o.push(compareMode);
 	}
 }
 #end

@@ -1,0 +1,12 @@
+diff --git a/src/openfl/display/_internal/DrawCommandType.hx b/src/openfl/display/_internal/DrawCommandType.hx
+index 223e64755..e18007b49 100644
+--- a/src/openfl/display/_internal/DrawCommandType.hx
++++ b/src/openfl/display/_internal/DrawCommandType.hx
+@@ -27,5 +27,7 @@ enum DrawCommandType
+ 	WINDING_EVEN_ODD;
+ 	WINDING_NON_ZERO;
+ 	UNKNOWN;
++
++OVERRIDE_DEPTH_TEST;
+ }
+ #end

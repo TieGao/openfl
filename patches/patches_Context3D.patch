@@ -1,0 +1,181 @@
+diff --git a/src/openfl/display3D/Context3D.hx b/src/openfl/display3D/Context3D.hx
+index 479c8e7dd..6452f760c 100644
+--- a/src/openfl/display3D/Context3D.hx
++++ b/src/openfl/display3D/Context3D.hx
+@@ -1,5 +1,18 @@
+ package openfl.display3D;
+ 
++
++import lime.graphics.opengl.GLBuffer;
++import lime.graphics.opengl.GLFramebuffer;
++import lime.graphics.opengl.GLTexture;
++import lime.utils.Float32Array;
++import lime.utils.UInt16Array;
++import lime.utils.UInt8Array;
++import openfl.display3D.textures.MultiBufferTexture;
++import openfl.display3D.textures.S3TCTexture;
++
++import openfl.display3D.textures.ASTCTexture;
++
++
+ #if !flash
+ import openfl.display3D._internal.Context3DState;
+ import openfl.display3D._internal.GLBuffer;
+@@ -1928,15 +1941,22 @@ import lime.math.Vector2;
+ 
+ 		if (buffer == null)
+ 		{
+-			gl.disableVertexAttribArray(index);
++			__setVertexAttribArray(index, false);
+ 			__bindGLArrayBuffer(null);
++			__invalidateVertexBufferAt(index);
+ 			return;
+ 		}
+ 
+-		__bindGLArrayBuffer(buffer.__id);
+-		gl.enableVertexAttribArray(index);
+-
+ 		var byteOffset = bufferOffset * 4;
++		var pointerDirty = #if openfl_disable_context_cache true #else
++			__contextState.__vertexBuffers[index] != buffer
++			|| __contextState.__vertexBufferOffsets[index] != byteOffset
++			|| __contextState.__vertexBufferFormats[index] != format
++			#end;
++
++		__bindGLArrayBuffer(buffer.__id);
++		__setVertexAttribArray(index, true);
++		if (!pointerDirty) return;
+ 
+ 		switch (format)
+ 		{
+@@ -1958,6 +1978,35 @@ import lime.math.Vector2;
+ 			default:
+ 				throw new IllegalOperationError();
+ 		}
++
++		__contextState.__vertexBuffers[index] = buffer;
++		__contextState.__vertexBufferOffsets[index] = byteOffset;
++		__contextState.__vertexBufferFormats[index] = format;
++	}
++
++	@:noCompletion public inline function __invalidateVertexBufferAt(index:Int):Void
++	{
++		if (index >= 0)
++			__contextState.__vertexBuffers[index] = null;
++	}
++
++	@:noCompletion public inline function __setVertexAttribArray(index:Int, enabled:Bool):Void
++	{
++		if (index < 0) return;
++
++		if (#if openfl_disable_context_cache true #else __contextState.__vertexAttribArrays[index] != enabled #end)
++		{
++			if (enabled)
++			{
++				gl.enableVertexAttribArray(index);
++			}
++			else
++			{
++				gl.disableVertexAttribArray(index);
++			}
++
++			__contextState.__vertexAttribArrays[index] = enabled;
++		}
+ 	}
+ 
+ 	@:noCompletion private function __bindGLArrayBuffer(buffer:GLBuffer):Void
+@@ -2463,12 +2512,12 @@ import lime.math.Vector2;
+ 				#end
+ 				var x = __stage3D == null ? 0 : Std.int(__stage3D.x);
+ 				var y = Std.int((__stage.window.height * __stage.window.scale) - scaledBackBufferHeight - (__stage3D == null ? 0 : __stage3D.y));
+-				gl.viewport(x, y, scaledBackBufferWidth, scaledBackBufferHeight);
+-			}
+-			else
+-			{
+-				gl.viewport(0, 0, backBufferWidth, backBufferHeight);
+-			}
++					gl.viewport(x, y, scaledBackBufferWidth, scaledBackBufferHeight);
++				}
++				else
++				{
++					gl.viewport(0, 0, backBufferWidth, backBufferHeight);
++				}
+ 		}
+ 		else
+ 		{
+@@ -2744,6 +2793,75 @@ import lime.math.Vector2;
+ 		}
+ 		return 0;
+ 	}
++
++	public function isASTCSupported():Bool
++	{
++		if (ASTCTexture.__astcCompressedTexturesSupported == null)
++		{
++			ASTCTexture.__astcCompressedTexturesSupported = gl.getSupportedExtensions().contains("KHR_texture_compression_astc_ldr");
++		}
++
++		return ASTCTexture.__astcCompressedTexturesSupported == true;
++	}
++
++	public function createASTCTexture(data:ByteArray):ASTCTexture
++	{
++		return new ASTCTexture(this, data);
++	}
++
++	public function setProgramConstantsFromArray(programType:Context3DProgramType, firstRegister:Int, data:Array<Float>, numRegisters:Int = -1):Void
++	{
++		if (numRegisters == 0) return;
++
++		if (__state.program != null && __state.program.__format == GLSL) {}
++		else
++		{
++			if (numRegisters == -1)
++			{
++				numRegisters = (data.length >> 2);
++			}
++
++			var isVertex = (programType == VERTEX);
++			var dest = isVertex ? __vertexConstants : __fragmentConstants;
++			var source = data;
++
++			var sourceIndex = 0;
++			var destIndex = firstRegister * 4;
++
++			for (i in 0...numRegisters)
++			{
++				dest[destIndex++] = source[sourceIndex++];
++				dest[destIndex++] = source[sourceIndex++];
++				dest[destIndex++] = source[sourceIndex++];
++				dest[destIndex++] = source[sourceIndex++];
++			}
++
++			if (__state.program != null)
++			{
++				__state.program.__markDirty(isVertex, firstRegister, numRegisters);
++			}
++		}
++	}
++
++	public function createMultiBufferTexture(width:Int, height:Int, formats:Array<Context3DTextureFormat>):MultiBufferTexture
++	{
++		return new MultiBufferTexture(this, width, height, formats);
++	}
++
++	public function isS3TCSupported():Bool
++	{
++		if (S3TCTexture.__s3tcCompressedTexturesSupported == null)
++		{
++			S3TCTexture.__s3tcCompressedTexturesSupported = gl.getSupportedExtensions().contains("EXT_texture_compression_s3tc");
++		}
++
++		return S3TCTexture.__s3tcCompressedTexturesSupported == true;
++	}
++
++	public function createS3TCTexture(data:ByteArray):S3TCTexture
++	{
++		return new S3TCTexture(this, data);
++	}
+ }
+ #else
+ typedef Context3D = flash.display3D.Context3D;

@@ -1,5 +1,7 @@
 package openfl.display._internal;
 
+import openfl.display3D.Context3DCompareMode;
+
 #if !flash
 import openfl.display.BitmapData;
 import openfl.display.BlendMode;
@@ -119,8 +121,11 @@ class DrawCommandReader
 			case MOVE_TO_INTERNAL:
 				fPos += 4; // strokeX, strokeY, fillX, fillY
 
-			case OVERRIDE_BLEND_MODE:
-				oPos += 1; // blendMode
+			case OVERRIDE_DEPTH_TEST:
+				oPos += 1;
+				bPos += 1;
+
+			case OVERRIDE_BLEND_MODE:				oPos += 1; // blendMode
 
 			case OVERRIDE_MATRIX:
 				oPos += 6; // matrix (6 float values)
@@ -341,6 +346,13 @@ class DrawCommandReader
 	{
 		advance();
 		prev = type;
+	}
+
+	public inline function readOverrideDepthTest():OverrideDepthTest
+	{
+		advance();
+		prev = OVERRIDE_DEPTH_TEST;
+		return new OverrideDepthTest(this);
 	}
 }
 
@@ -1136,3 +1148,24 @@ abstract WindingNonZeroView(DrawCommandReader)
 	}
 }
 #end
+abstract OverrideDepthTest(DrawCommandReader)
+{
+	public inline function new(d:DrawCommandReader)
+	{
+		this = d;
+	}
+
+	public var depthTest(get, never):Bool;
+
+	private inline function get_depthTest():Bool
+	{
+		return this.bool(0);
+	}
+
+	public var compareMode(get, never):Context3DCompareMode;
+
+	private inline function get_compareMode():Context3DCompareMode
+	{
+		return this.obj(0);
+	}
+}

@@ -954,4 +954,8 @@ class Assets
 		Event.__pool.release(changeEvent);
 		#end
 	}
+
+	public static var allowCompressedTextures:Bool = true;
+
+	public static var allowHardwareTextures:Bool = true;
 }

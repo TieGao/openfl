@@ -1,0 +1,13 @@
+diff --git a/src/openfl/display/Bitmap.hx b/src/openfl/display/Bitmap.hx
+index ac1266f8e..90eeeb021 100644
+--- a/src/openfl/display/Bitmap.hx
++++ b/src/openfl/display/Bitmap.hx
+@@ -134,7 +134,7 @@ class Bitmap extends DisplayObject
+ 		}
+ 	}
+ 
+-	@:noCompletion private override function __enterFrame(deltaTime:Int):Void
++	@:noCompletion private override function __enterFrame(deltaTime:Float):Void
+ 	{
+ 		if (__bitmapData != null && __bitmapData.image != null && __bitmapData.image.version != __imageVersion)
+ 		{

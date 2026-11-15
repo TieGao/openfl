@@ -1,0 +1,13 @@
+diff --git a/src/openfl/utils/Assets.hx b/src/openfl/utils/Assets.hx
+index df00ca55a..8cb061e6a 100644
+--- a/src/openfl/utils/Assets.hx
++++ b/src/openfl/utils/Assets.hx
+@@ -942,4 +942,8 @@ class Assets
+ 	{
+ 		dispatchEvent(new Event(Event.CHANGE));
+ 	}
++
++	public static var allowCompressedTextures:Bool = true;
++
++	public static var allowHardwareTextures:Bool = true;
+ }

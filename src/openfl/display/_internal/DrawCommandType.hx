@@ -28,5 +28,7 @@ enum DrawCommandType
 	WINDING_EVEN_ODD;
 	WINDING_NON_ZERO;
 	UNKNOWN;
+
+OVERRIDE_DEPTH_TEST;
 }
 #end
