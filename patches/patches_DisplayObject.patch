@@ -1,0 +1,31 @@
+diff --git a/src/openfl/display/DisplayObject.hx b/src/openfl/display/DisplayObject.hx
+index e68095710..b6b4dbecb 100644
+--- a/src/openfl/display/DisplayObject.hx
++++ b/src/openfl/display/DisplayObject.hx
+@@ -1164,7 +1164,7 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
+ 	{
+ 		switch (type)
+ 		{
+-			case Event.ACTIVATE, Event.DEACTIVATE, Event.ENTER_FRAME, Event.EXIT_FRAME, Event.FRAME_CONSTRUCTED, Event.RENDER:
++			case Event.ACTIVATE, Event.DEACTIVATE, Event.ENTER_UPDATE, Event.ENTER_FRAME, Event.EXIT_FRAME, Event.FRAME_CONSTRUCTED, Event.RENDER:
+ 				if (!__broadcastEvents.exists(type))
+ 				{
+ 					__broadcastEvents.set(type, []);
+@@ -1409,7 +1409,7 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
+ 
+ 		switch (type)
+ 		{
+-			case Event.ACTIVATE, Event.DEACTIVATE, Event.ENTER_FRAME, Event.EXIT_FRAME, Event.FRAME_CONSTRUCTED, Event.RENDER:
++			case Event.ACTIVATE, Event.DEACTIVATE, Event.ENTER_UPDATE, Event.ENTER_FRAME, Event.EXIT_FRAME, Event.FRAME_CONSTRUCTED, Event.RENDER:
+ 				if (!hasEventListener(type))
+ 				{
+ 					if (__broadcastEvents.exists(type))
+@@ -1577,7 +1577,7 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
+ 		return __dispatchEvent(event);
+ 	}
+ 
+-	@:noCompletion private function __enterFrame(deltaTime:Int):Void {}
++	@:noCompletion private function __enterFrame(deltaTime:Float):Void {}
+ 
+ 	@:noCompletion private function __getBounds(rect:Rectangle, matrix:Matrix):Void
+ 	{

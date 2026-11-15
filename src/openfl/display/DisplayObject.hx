@@ -1171,7 +1171,7 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 	{
 		switch (type)
 		{
-			case Event.ACTIVATE, Event.DEACTIVATE, Event.ENTER_FRAME, Event.EXIT_FRAME, Event.FRAME_CONSTRUCTED, Event.RENDER:
+			case Event.ACTIVATE, Event.DEACTIVATE, Event.ENTER_UPDATE, Event.ENTER_FRAME, Event.EXIT_FRAME, Event.FRAME_CONSTRUCTED, Event.RENDER:
 				if (!__broadcastEvents.exists(type))
 				{
 					__broadcastEvents.set(type, []);
@@ -1429,7 +1429,7 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 
 		switch (type)
 		{
-			case Event.ACTIVATE, Event.DEACTIVATE, Event.ENTER_FRAME, Event.EXIT_FRAME, Event.FRAME_CONSTRUCTED, Event.RENDER:
+			case Event.ACTIVATE, Event.DEACTIVATE, Event.ENTER_UPDATE, Event.ENTER_FRAME, Event.EXIT_FRAME, Event.FRAME_CONSTRUCTED, Event.RENDER:
 				if (!hasEventListener(type))
 				{
 					if (__broadcastEvents.exists(type))
@@ -1599,7 +1599,7 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 		return capturingResult && atTargetResult;
 	}
 
-	@:noCompletion private function __enterFrame(deltaTime:Int):Void {}
+	@:noCompletion private function __enterFrame(deltaTime:Float):Void {}
 
 	@:noCompletion private function __getBounds(rect:Rectangle, matrix:Matrix):Void
 	{
