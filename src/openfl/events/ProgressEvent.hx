@@ -103,8 +103,20 @@ class ProgressEvent extends Event
 
 	#if openfl_pool_events
 	@:allow(openfl.desktop)
-	@:noCompletion private static var __pool:ObjectPool<ProgressEvent> = new ObjectPool<ProgressEvent>(function() return new ProgressEvent(null),
-		function(event) event.__init());
+	@:noCompletion private static var __pool(get, never):ObjectPool<ProgressEvent>;
+	@:noCompletion private static var __poolStorage:ObjectPool<ProgressEvent>;
+
+	// Created on first use: static initializer order is unspecified, and pooled
+	// events can be requested from inside another class's initializer.
+	@:noCompletion private static function get___pool():ObjectPool<ProgressEvent>
+	{
+		if (__poolStorage == null)
+		{
+			__poolStorage = new ObjectPool<ProgressEvent>(function() return new ProgressEvent(null), function(event) event.__init());
+		}
+
+		return __poolStorage;
+	}
 	#end
 
 	/**

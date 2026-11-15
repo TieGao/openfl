@@ -209,8 +209,21 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 	@:noCompletion
 	private static #if !js inline #end var __supportDOM:Bool #if !js = false #end;
 
-	@:noCompletion private static var __tempStack:ObjectPool<Vector<DisplayObject>> = new ObjectPool<Vector<DisplayObject>>(function() return
-		new Vector<DisplayObject>(), function(stack) stack.length = 0);
+	@:noCompletion private static var __tempStack(get, never):ObjectPool<Vector<DisplayObject>>;
+	@:noCompletion private static var __tempStackStorage:ObjectPool<Vector<DisplayObject>>;
+
+	// Created on first use: static initializer order is unspecified, and display
+	// list traversal can run inside another class's initializer.
+	@:noCompletion private static function get___tempStack():ObjectPool<Vector<DisplayObject>>
+	{
+		if (__tempStackStorage == null)
+		{
+			__tempStackStorage = new ObjectPool<Vector<DisplayObject>>(function() return new Vector<DisplayObject>(),
+				function(stack) stack.length = 0);
+		}
+
+		return __tempStackStorage;
+	}
 
 	#if false
 	/**

@@ -62,8 +62,20 @@ class Rectangle
 	#if lime
 	@:noCompletion private static var __limeRectangle:LimeRectangle;
 	#end
-	@:noCompletion private static var __pool:ObjectPool<Rectangle> = new ObjectPool<Rectangle>(function() return new Rectangle(),
-		function(r) r.setTo(0, 0, 0, 0));
+	@:noCompletion private static var __pool(get, never):ObjectPool<Rectangle>;
+	@:noCompletion private static var __poolStorage:ObjectPool<Rectangle>;
+
+	// Created on first use: static initializer order is unspecified, and geometry
+	// pools are requested from inside other classes' initializers.
+	@:noCompletion private static function get___pool():ObjectPool<Rectangle>
+	{
+		if (__poolStorage == null)
+		{
+			__poolStorage = new ObjectPool<Rectangle>(function() return new Rectangle(), function(r) r.setTo(0, 0, 0, 0));
+		}
+
+		return __poolStorage;
+	}
 
 	/**
 		The sum of the `y` and `height` properties.

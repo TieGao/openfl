@@ -755,7 +755,22 @@ class Event
 	public var type(default, null):String;
 
 	#if openfl_pool_events
-	@:noCompletion private static var __pool:ObjectPool<Event> = new ObjectPool<Event>(function() return new Event(null), function(event) event.__init());
+	@:noCompletion private static var __pool(get, never):ObjectPool<Event>;
+	@:noCompletion private static var __poolStorage:ObjectPool<Event>;
+
+	// hxcpp runs class static initializers in an unspecified order, and display-list
+	// work (addChild dispatches ADDED) can run inside another class's initializer.
+	// The pool is therefore created on first use, never at boot, so it cannot be
+	// observed as null.
+	@:noCompletion private static function get___pool():ObjectPool<Event>
+	{
+		if (__poolStorage == null)
+		{
+			__poolStorage = new ObjectPool<Event>(function() return new Event(null), function(event) event.__init());
+		}
+
+		return __poolStorage;
+	}
 	#end
 
 	@:noCompletion private var __dispatching:Bool;

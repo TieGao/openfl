@@ -60,8 +60,20 @@ class ColorTransform
 	#if lime
 	@:noCompletion private static var __limeColorMatrix:Float32Array;
 	#end
-	@:noCompletion private static var __pool:ObjectPool<ColorTransform> = new ObjectPool<ColorTransform>(function() return new ColorTransform(),
-		function(ct) ct.__identity());
+	@:noCompletion private static var __pool(get, never):ObjectPool<ColorTransform>;
+	@:noCompletion private static var __poolStorage:ObjectPool<ColorTransform>;
+
+	// Created on first use: static initializer order is unspecified, and geometry
+	// pools are requested from inside other classes' initializers.
+	@:noCompletion private static function get___pool():ObjectPool<ColorTransform>
+	{
+		if (__poolStorage == null)
+		{
+			__poolStorage = new ObjectPool<ColorTransform>(function() return new ColorTransform(), function(ct) ct.__identity());
+		}
+
+		return __poolStorage;
+	}
 
 	/**
 		A decimal value that is multiplied with the alpha transparency channel

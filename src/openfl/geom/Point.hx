@@ -37,7 +37,20 @@ import lime.math.Vector2;
 #end
 class Point
 {
-	@:noCompletion private static var __pool:ObjectPool<Point> = new ObjectPool<Point>(function() return new Point(), function(p) p.setTo(0, 0));
+	@:noCompletion private static var __pool(get, never):ObjectPool<Point>;
+	@:noCompletion private static var __poolStorage:ObjectPool<Point>;
+
+	// Created on first use: static initializer order is unspecified, and geometry
+	// pools are requested from inside other classes' initializers.
+	@:noCompletion private static function get___pool():ObjectPool<Point>
+	{
+		if (__poolStorage == null)
+		{
+			__poolStorage = new ObjectPool<Point>(function() return new Point(), function(p) p.setTo(0, 0));
+		}
+
+		return __poolStorage;
+	}
 	#if lime
 	@:noCompletion private static var __limeVector2:Vector2;
 	#end

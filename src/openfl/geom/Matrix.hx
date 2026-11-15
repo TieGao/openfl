@@ -77,7 +77,20 @@ import lime.math.Matrix3;
 class Matrix
 {
 	@:noCompletion private static var __identity:Matrix = new Matrix();
-	@:noCompletion private static var __pool:ObjectPool<Matrix> = new ObjectPool<Matrix>(function() return new Matrix(), function(m) m.identity());
+	@:noCompletion private static var __pool(get, never):ObjectPool<Matrix>;
+	@:noCompletion private static var __poolStorage:ObjectPool<Matrix>;
+
+	// Created on first use: static initializer order is unspecified, and geometry
+	// pools are requested from inside other classes' initializers.
+	@:noCompletion private static function get___pool():ObjectPool<Matrix>
+	{
+		if (__poolStorage == null)
+		{
+			__poolStorage = new ObjectPool<Matrix>(function() return new Matrix(), function(m) m.identity());
+		}
+
+		return __poolStorage;
+	}
 	#if lime
 	@:noCompletion private static var __matrix3:Matrix3 = new Matrix3();
 	#end

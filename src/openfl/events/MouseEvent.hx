@@ -583,8 +583,20 @@ class MouseEvent extends Event
 	@:noCompletion private static var __controlKey:Bool;
 	@:noCompletion private static var __ctrlKey:Bool;
 	#if openfl_pool_events
-	@:noCompletion private static var __pool:ObjectPool<MouseEvent> = new ObjectPool<MouseEvent>(function() return new MouseEvent(null),
-		function(event) event.__init());
+	@:noCompletion private static var __pool(get, never):ObjectPool<MouseEvent>;
+	@:noCompletion private static var __poolStorage:ObjectPool<MouseEvent>;
+
+	// Created on first use: static initializer order is unspecified, and pooled
+	// events can be requested from inside another class's initializer.
+	@:noCompletion private static function get___pool():ObjectPool<MouseEvent>
+	{
+		if (__poolStorage == null)
+		{
+			__poolStorage = new ObjectPool<MouseEvent>(function() return new MouseEvent(null), function(event) event.__init());
+		}
+
+		return __poolStorage;
+	}
 	#end
 	@:noCompletion private static var __shiftKey:Bool;
 
