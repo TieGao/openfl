@@ -56,10 +56,9 @@ import openfl.utils.ObjectPool;
 @:fileXml('tags="haxe,release"')
 @:noDebug
 #end
-// Pool consumers mutate pooled events directly (see Application.hx and
-// desktop.NativeProcess under `openfl_pool_events`); grant them access.
-@:allow(openfl.display)
-@:allow(openfl.desktop)
+// Pool consumers mutate pooled events directly (Application.hx, desktop.NativeProcess,
+// net.FileReferenceList, ... under `openfl_pool_events`); grant library-internal access.
+@:allow(openfl)
 class Event
 {
 	/**
