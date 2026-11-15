@@ -1,5 +1,7 @@
 package openfl.display;
 
+import openfl.display3D.Context3DCompareMode;
+
 #if !flash
 import openfl.display._internal.CairoGraphics;
 import openfl.display._internal.CanvasGraphics;
@@ -79,7 +81,11 @@ import js.html.CanvasRenderingContext2D;
 	@:noCompletion private var __triangleIndexBuffer:IndexBuffer3D;
 	@:noCompletion private var __triangleIndexBufferCount:Int;
 	@:noCompletion private var __triangleIndexBufferData:UInt16Array;
-	@:noCompletion private var __usedShaderBuffers:List<ShaderBuffer>;
+	// This collection is emptied every frame.  List.add allocates a managed
+	// ListNode for every shader buffer use, so a busy Flixel scene can create
+	// tens of thousands of nodes per nursery cohort.  Retain an Array backing
+	// store and reuse its capacity instead.
+	@:noCompletion private var __usedShaderBuffers:Array<ShaderBuffer>;
 	@:noCompletion private var __vertexBuffer:VertexBuffer3D;
 	@:noCompletion private var __vertexBufferCount:Int;
 	@:noCompletion private var __vertexBufferCountUVT:Int;
@@ -109,7 +115,9 @@ import js.html.CanvasRenderingContext2D;
 		__strokePadding = 0;
 		__positionX = 0;
 		__positionY = 0;
-		__usedShaderBuffers = new List<ShaderBuffer>();
+		__renderTransform = new Matrix();
+		__usedShaderBuffers = [];
+		__worldTransform = new Matrix();
 		__width = 0;
 		__height = 0;
 
@@ -392,7 +400,7 @@ import js.html.CanvasRenderingContext2D;
 		{
 			#if lime
 			var shaderBuffer = __shaderBufferPool.get();
-			__usedShaderBuffers.add(shaderBuffer);
+			__usedShaderBuffers.push(shaderBuffer);
 			shaderBuffer.update(cast shader);
 
 			__commands.beginShaderFill(shaderBuffer);
@@ -414,7 +422,7 @@ import js.html.CanvasRenderingContext2D;
 		}
 		#end
 
-		__usedShaderBuffers.clear();
+		__usedShaderBuffers.resize(0);
 		__commands.clear();
 		__strokePadding = 0;
 
@@ -2110,6 +2118,17 @@ import js.html.CanvasRenderingContext2D;
 
 		return __dirty = value;
 	}
+
+	public function overrideDepthTest(depthTest:Bool = false, compareMode:Context3DCompareMode):Void
+	{
+		if (compareMode == null) compareMode = ALWAYS;
+		__commands.overrideDepthTest(depthTest, compareMode);
+	}
+
+private var __compatBufferFormats:Array<openfl.display3D.Context3DTextureFormat>=[];
+ public function addBuffer(format:openfl.display3D.Context3DTextureFormat):Int {__compatBufferFormats.push(format); return __compatBufferFormats.length;}
+ public function setBufferFilters(index:Int,filters:Array<openfl.filters.BitmapFilter>,resolutionScale:Float=1.0,updateInterval:Float=0):Void {}
+ public function getBuffer(index:Int):BitmapData return null;
 }
 #else
 typedef Graphics = flash.display.Graphics;

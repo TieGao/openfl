@@ -318,6 +318,11 @@ class Event
 	public static inline var ENTER_FRAME:EventType<Event> = "enterFrame";
 
 	/**
+		差分渲染和更新
+	**/
+	public static inline var ENTER_UPDATE:EventType<Event> = "enterUpdate";
+
+	/**
 		The `Event.EXIT_FRAME` constant defines the value of the `type`
 		property of an `exitFrame` event object.
 		**Note:** This event has neither a "capture phase" nor a "bubble

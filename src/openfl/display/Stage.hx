@@ -14,6 +14,7 @@ import openfl.events.EventPhase;
 import openfl.events.FocusEvent;
 import openfl.events.FullScreenEvent;
 import openfl.events.KeyboardEvent;
+import openfl.events.TextEditEvent;
 import openfl.events.MouseEvent;
 import openfl.events.StageOrientationEvent;
 import openfl.events.TextEvent;
@@ -29,6 +30,7 @@ import openfl.ui.GameInput;
 import openfl.ui.Keyboard;
 import openfl.ui.Mouse;
 import openfl.ui.MouseCursor;
+
 #if lime
 import lime.app.Application;
 import lime.app.IModule;
@@ -987,7 +989,7 @@ class Stage extends DisplayObjectContainer #if lime implements IModule #end
 	#if (commonjs && !nodejs)
 	@:noCompletion private var __cursor:LimeMouseCursor;
 	#end
-	@:noCompletion private var __deltaTime:Int;
+	@:noCompletion private var __deltaTime:Float;
 	@:noCompletion private var __dirty:Bool;
 	@:noCompletion private var __displayMatrix:Matrix;
 	@:noCompletion private var __displayRect:Rectangle;
@@ -1005,6 +1007,8 @@ class Stage extends DisplayObjectContainer #if lime implements IModule #end
 	@:noCompletion private var __lastClickTarget:InteractiveObject;
 	@:noCompletion private var __logicalWidth:Int;
 	@:noCompletion private var __logicalHeight:Int;
+	@:noCompletion private var __desiredLogicalWidth:Int;
+	@:noCompletion private var __desiredLogicalHeight:Int;
 	@:noCompletion private var __macKeyboard:Bool;
 	@:noCompletion private var __mouseDownLeft:InteractiveObject;
 	@:noCompletion private var __mouseDownMiddle:InteractiveObject;
@@ -1021,6 +1025,18 @@ class Stage extends DisplayObjectContainer #if lime implements IModule #end
 	@:noCompletion private var __quality:StageQuality;
 	@:noCompletion private var __renderer:DisplayObjectRenderer;
 	@:noCompletion private var __rendering:Bool;
+	#if sys
+	@:noCompletion private static var __novaPerfTrace:Bool = Sys.getEnv("NOVAGC_PERF_TRACE") != null;
+	@:noCompletion private static var __novaPerfWindowStart:Float = 0.0;
+	@:noCompletion private static var __novaPerfCount:Int = 0;
+	@:noCompletion private static var __novaPerfTotal:Float = 0.0;
+	@:noCompletion private static var __novaPerfUpdateTree:Float = 0.0;
+	@:noCompletion private static var __novaPerfRendererGap:Float = 0.0;
+	@:noCompletion private static var __novaPerfRenderer:Float = 0.0;
+	@:noCompletion private static var __novaPerfTail:Float = 0.0;
+	@:noCompletion private static var __novaPerfMax:Float = 0.0;
+	#end
+	@:noCompletion private var __lastCompositeTime:Int;
 	@:noCompletion private var __rollOutStack:Array<DisplayObject>;
 	@:noCompletion private var __scaleMode:StageScaleMode;
 	@:noCompletion private var __stack:Array<DisplayObject>;
@@ -1111,6 +1127,7 @@ class Stage extends DisplayObjectContainer #if lime implements IModule #end
 		__displayMatrix = new Matrix();
 		__displayRect = new Rectangle();
 		__renderDirty = true;
+		__lastCompositeTime = 0;
 
 		stage3Ds = new Vector();
 		for (i in 0...#if mobile 2 #else 4 #end)
@@ -2090,6 +2107,7 @@ class Stage extends DisplayObjectContainer #if lime implements IModule #end
 		window.onMouseUp.add(__onLimeMouseUp.bind(window));
 		window.onMouseWheel.add(__onLimeMouseWheel.bind(window));
 		window.onMove.add(__onLimeWindowMove.bind(window));
+		window.onlyUpdate.add(__onLimeOnlyUpdate);
 		window.onRender.add(__onLimeRender);
 		window.onRenderContextLost.add(__onLimeRenderContextLost);
 		window.onRenderContextRestored.add(__onLimeRenderContextRestored);
@@ -2337,21 +2355,46 @@ class Stage extends DisplayObjectContainer #if lime implements IModule #end
 
 	@:noCompletion private function __renderAfterEvent():Void
 	{
+		#if sys
+		var __novaStarted = __novaPerfTrace ? haxe.Timer.stamp() : 0.0;
+		var __novaAfterBackend = 0.0;
+		var __novaAfterRender = 0.0;
+		#end
 		#if (cpp || hl || neko)
 		// TODO: should Lime have a public API to force rendering?
 		window.__backend.render();
 		#end
+		#if sys
+		if (__novaPerfTrace) __novaAfterBackend = haxe.Timer.stamp();
+		#end
 		var cancelled = __render(window.context);
+		#if sys
+		if (__novaPerfTrace) __novaAfterRender = haxe.Timer.stamp();
+		#end
 		#if (cpp || hl || neko)
 		if (!cancelled)
 		{
 			window.__backend.contextFlip();
 		}
 		#end
+		#if sys
+		if (__novaPerfTrace)
+		{
+			var __novaEnded = haxe.Timer.stamp();
+			if (__novaEnded - __novaStarted >= 0.02)
+				Sys.println('perf:Stage.renderAfterEvent total_ms=${Math.round((__novaEnded - __novaStarted) * 1000)} backend_ms=${Math.round((__novaAfterBackend - __novaStarted) * 1000)} render_ms=${Math.round((__novaAfterRender - __novaAfterBackend) * 1000)} flip_ms=${Math.round((__novaEnded - __novaAfterRender) * 1000)}');
+		}
+		#end
 	}
 
 	@:noCompletion private function __render(context:RenderContext):Bool
 	{
+		#if sys
+		var __novaStarted = __novaPerfTrace ? haxe.Timer.stamp() : 0.0;
+		var __novaAfterUpdate = 0.0;
+		var __novaBeforeRenderer = 0.0;
+		var __novaAfterRenderer = 0.0;
+		#end
 		var cancelled = false;
 
 		var event:Event = null;
@@ -2386,6 +2429,9 @@ class Stage extends DisplayObjectContainer #if lime implements IModule #end
 		#else
 		__update(false, true);
 		#end
+		#if sys
+		if (__novaPerfTrace) __novaAfterUpdate = haxe.Timer.stamp();
+		#end
 
 		#if lime
 		if (__renderer != null)
@@ -2404,6 +2450,9 @@ class Stage extends DisplayObjectContainer #if lime implements IModule #end
 
 			if (shouldRender)
 			{
+				#if sys
+				if (__novaPerfTrace) __novaBeforeRenderer = haxe.Timer.stamp();
+				#end
 				if (__renderer.__type == CAIRO)
 				{
 					#if lime_cairo
@@ -2417,6 +2466,9 @@ class Stage extends DisplayObjectContainer #if lime implements IModule #end
 				}
 
 				__renderer.__render(this);
+				#if sys
+				if (__novaPerfTrace) __novaAfterRenderer = haxe.Timer.stamp();
+				#end
 			}
 			else if (context3D == null)
 			{
@@ -2454,7 +2506,50 @@ class Stage extends DisplayObjectContainer #if lime implements IModule #end
 		cpp.vm.tracy.TracyProfiler.frameMark();
 		#end
 
+		#if lime
+		__lastCompositeTime = Lib.getTimer();
+		#end
+		#if sys
+		if (__novaPerfTrace)
+		{
+			var __novaEnded = haxe.Timer.stamp();
+			var __novaTotal = __novaEnded - __novaStarted;
+			var __novaUpdateTree = __novaAfterUpdate - __novaStarted;
+			var __novaRenderer = __novaAfterRenderer > 0.0 ? __novaAfterRenderer - __novaBeforeRenderer : 0.0;
+			if (__novaTotal >= 0.02)
+				Sys.println('perf:Stage.render.slow total_ms=${Math.round(__novaTotal * 1000)} update_tree_ms=${Math.round(__novaUpdateTree * 1000)} renderer_ms=${Math.round(__novaRenderer * 1000)}');
+
+			if (__novaAfterRenderer > 0.0)
+			{
+				var __novaGap = __novaBeforeRenderer - __novaAfterUpdate;
+				var __novaTail = __novaEnded - __novaAfterRenderer;
+				if (__novaPerfWindowStart == 0.0) __novaPerfWindowStart = __novaStarted;
+				__novaPerfCount++;
+				__novaPerfTotal += __novaTotal;
+				__novaPerfUpdateTree += __novaUpdateTree;
+				__novaPerfRendererGap += __novaGap;
+				__novaPerfRenderer += __novaRenderer;
+				__novaPerfTail += __novaTail;
+				if (__novaTotal > __novaPerfMax) __novaPerfMax = __novaTotal;
+				if (__novaEnded - __novaPerfWindowStart >= 1.0)
+				{
+					var __novaScale = 1000000.0 / __novaPerfCount;
+					Sys.println('perf:Stage.render.avg frames=$__novaPerfCount total_us=${Math.round(__novaPerfTotal * __novaScale)} update_tree_us=${Math.round(__novaPerfUpdateTree * __novaScale)} gap_us=${Math.round(__novaPerfRendererGap * __novaScale)} renderer_us=${Math.round(__novaPerfRenderer * __novaScale)} tail_us=${Math.round(__novaPerfTail * __novaScale)} max_us=${Math.round(__novaPerfMax * 1000000)}');
+					__novaPerfWindowStart = __novaEnded;
+					__novaPerfCount = 0;
+					__novaPerfTotal = __novaPerfUpdateTree = __novaPerfRendererGap = __novaPerfRenderer = __novaPerfTail = __novaPerfMax = 0.0;
+				}
+			}
+		}
+		#end
+
 		return cancelled;
+	}
+
+	//仅仅负责广播ENTER_UPDATE事件
+	@:noCompletion private function __onLimeOnlyUpdate():Void
+	{
+		__broadcastEvent(new Event(Event.ENTER_UPDATE));
 	}
 
 	@:noCompletion private function __onLimeRender(context:RenderContext):Void
@@ -2479,22 +2574,29 @@ class Stage extends DisplayObjectContainer #if lime implements IModule #end
 		__broadcastEvent(event);
 
 		Event.__pool.release(event);
-		event = Event.__pool.get();
-		event.type = Event.FRAME_CONSTRUCTED;
-
-		__broadcastEvent(event);
-
-		Event.__pool.release(event);
-		event = Event.__pool.get();
-		event.type = Event.EXIT_FRAME;
-
-		__broadcastEvent(event);
-
-		Event.__pool.release(event);
+		// FRAME_CONSTRUCTED and EXIT_FRAME normally have no listeners in games.
+		// Avoid two pool round-trips per presentation while preserving dynamic
+		// listeners used by tooling or mods.
+		if (DisplayObject.__broadcastEvents.exists(Event.FRAME_CONSTRUCTED))
+		{
+			event = Event.__pool.get();
+			event.type = Event.FRAME_CONSTRUCTED;
+			__broadcastEvent(event);
+			Event.__pool.release(event);
+		}
+		if (DisplayObject.__broadcastEvents.exists(Event.EXIT_FRAME))
+		{
+			event = Event.__pool.get();
+			event.type = Event.EXIT_FRAME;
+			__broadcastEvent(event);
+			Event.__pool.release(event);
+		}
 		#else
 		__broadcastEvent(new Event(Event.ENTER_FRAME));
-		__broadcastEvent(new Event(Event.FRAME_CONSTRUCTED));
-		__broadcastEvent(new Event(Event.EXIT_FRAME));
+		if (DisplayObject.__broadcastEvents.exists(Event.FRAME_CONSTRUCTED))
+			__broadcastEvent(new Event(Event.FRAME_CONSTRUCTED));
+		if (DisplayObject.__broadcastEvents.exists(Event.EXIT_FRAME))
+			__broadcastEvent(new Event(Event.EXIT_FRAME));
 		#end
 
 		__renderable = true;
@@ -2523,6 +2625,7 @@ class Stage extends DisplayObjectContainer #if lime implements IModule #end
 
 	@:noCompletion private function __onLimeRenderContextRestored(context:RenderContext):Void
 	{
+		__lastCompositeTime = 0;
 		__createRenderer();
 
 		for (stage3D in stage3Ds)
@@ -2532,9 +2635,36 @@ class Stage extends DisplayObjectContainer #if lime implements IModule #end
 	}
 
 	@:noCompletion private function __onLimeTextEdit(window:Window, text:String, start:Int, length:Int):Void
-	{
-		// if (this.window == null || this.window != window) return;
-	}
+    {
+        if (this.window == null || this.window != window) return;
+
+        var stack = new Array<DisplayObject>();
+
+        if (__focus == null)
+        {
+            __getInteractive(stack);
+        }
+        else
+        {
+            __focus.__getInteractive(stack);
+        }
+
+        var event = new TextEditEvent(TextEditEvent.TEXT_EDIT, true, true, text, start, length);
+        if (stack.length > 0)
+        {
+            stack.reverse();
+            __dispatchStack(event, stack);
+        }
+        else
+        {
+            __dispatchEvent(event);
+        }
+
+        if (event.isDefaultPrevented())
+        {
+            window.onTextEdit.cancel();
+        }
+    }
 
 	@:noCompletion private function __onLimeTextInput(window:Window, text:String):Void
 	{
@@ -2606,7 +2736,7 @@ class Stage extends DisplayObjectContainer #if lime implements IModule #end
 		__onTouch(TouchEvent.TOUCH_BEGIN, touch, __primaryTouch == touch);
 	}
 
-	@:noCompletion private function __onLimeUpdate(deltaTime:Int):Void
+	@:noCompletion private function __onLimeUpdate(deltaTime:Float):Void
 	{
 		__deltaTime = deltaTime;
 
@@ -2811,6 +2941,15 @@ class Stage extends DisplayObjectContainer #if lime implements IModule #end
 	@:noCompletion private function __onLimeWindowResize(window:Window, width:Int, height:Int):Void
 	{
 		if (this.window == null || this.window != window) return;
+
+		if (__desiredLogicalWidth > 0 && __desiredLogicalHeight > 0)
+		{
+			#if mobile
+			calcScreen(this.window.width * this.window.scale, this.window.height * this.window.scale, __desiredLogicalWidth, __desiredLogicalHeight);
+			#else
+			calcScreen(this.window.width, this.window.height, __desiredLogicalWidth, __desiredLogicalHeight);
+			#end
+		}
 
 		__resize();
 
@@ -3676,7 +3815,7 @@ class Stage extends DisplayObjectContainer #if lime implements IModule #end
 		}
 		else
 		{
-			if (__logicalWidth == 0 || __logicalHeight == 0 || scaleMode == NO_SCALE || windowWidth == 0 || windowHeight == 0)
+			if (__logicalWidth == 0 || __logicalHeight == 0 || windowWidth == 0 || windowHeight == 0)
 			{
 				#if openfl_dpi_aware
 				stageWidth = windowWidth;
@@ -3704,6 +3843,12 @@ class Stage extends DisplayObjectContainer #if lime implements IModule #end
 						__displayMatrix.scale(displayScaleX, displayScaleY);
 						__displayRect.setTo(0, 0, __logicalWidth, __logicalHeight);
 
+					case NO_SCALE:
+						var scaleX = windowWidth / __logicalWidth;
+						var scaleY = windowHeight / __logicalHeight;
+						var scale = Math.min(scaleX, scaleY);
+						__applyScaleAndAlign(windowWidth, windowHeight, scale, scale);
+
 					case NO_BORDER:
 						var scaleX = windowWidth / __logicalWidth;
 						var scaleY = windowHeight / __logicalHeight;
@@ -3725,13 +3870,25 @@ class Stage extends DisplayObjectContainer #if lime implements IModule #end
 
 		if (context3D != null)
 		{
-			#if openfl_dpi_aware
-			context3D.configureBackBuffer(windowWidth, windowHeight, 0, true, true, true);
-			#else
-			var unscaledWindowWidth = Std.int(window.width);
-			var unscaledWindowHeight = Std.int(window.height);
-			context3D.configureBackBuffer(unscaledWindowWidth, unscaledWindowHeight, 0, true, true, true);
-			#end
+			if (__logicalWidth > 0 && __logicalHeight > 0 && scaleMode == NO_SCALE)
+			{
+				#if openfl_dpi_aware
+				context3D.configureBackBuffer(windowWidth, windowHeight, 0, true, true, true);
+				#else
+				// configureBackBuffer() applies window.scale itself when best
+				// resolution is requested. windowWidth/windowHeight are already
+				// drawable pixels, so passing them here scales Retina buffers twice.
+				context3D.configureBackBuffer(window.width, window.height, 0, true, true, true);
+				#end
+			}
+			else
+			{
+				#if openfl_dpi_aware
+				context3D.configureBackBuffer(windowWidth, windowHeight, 0, true, true, true);
+				#else
+				context3D.configureBackBuffer(stageWidth, stageHeight, 0, true, true, true);
+				#end
+			}
 		}
 
 		for (stage3D in stage3Ds)
@@ -3774,10 +3931,54 @@ class Stage extends DisplayObjectContainer #if lime implements IModule #end
 
 	@:noCompletion private function __setLogicalSize(width:Int, height:Int):Void
 	{
-		__logicalWidth = width;
-		__logicalHeight = height;
+		__desiredLogicalWidth = width;
+		__desiredLogicalHeight = height;
+
+		try
+		{
+		#if mobile
+		calcScreen(this.window.width * this.window.scale, this.window.height * this.window.scale, width, height);
+		#else
+		calcScreen(this.window.width, this.window.height, width, height);
+		#end
+		}
+		catch (e)
+		{
+			__logicalWidth = width;
+			__logicalHeight = height;
+		}
+
+
 
 		__resize();
+	}
+
+	inline function calcScreen(stageWidth:Float, stageHeight:Float, wantWidth:Int = 1280, wantHeight:Int = 720) {
+		#if mobile
+		var ratioX = stageWidth / wantWidth;
+		var ratioY = stageHeight / wantHeight;
+		// iOS previously used a cover ratio here. On wide landscape displays that
+		// reduced the logical height and enlarged the entire Stage, cropping and
+		// offsetting the game view. Expand the visible logical width instead, as
+		// the pre-custom-scaling mobile bootstrap did. Keep Android unchanged.
+		var ratio = #if ios Math.min(ratioX, ratioY) #else Math.max(ratioX, ratioY) #end;
+		__logicalWidth = Math.ceil(stageWidth / ratio);
+		__logicalHeight = Math.ceil(stageHeight / ratio);
+		#else
+		var windowRatio:Float = stageWidth / stageHeight;
+		__logicalWidth = Std.int(Math.min(stageWidth, wantWidth));
+		__logicalHeight = Std.int(__logicalWidth / windowRatio);
+		if (__logicalHeight > Math.min(stageHeight, wantHeight))
+		{
+			__logicalHeight = Std.int(Math.min(stageHeight, wantHeight));
+			__logicalWidth = Std.int(__logicalHeight * windowRatio);
+		}
+		#end
+	}
+
+	public function setLogicalSize(width:Int, height:Int):Void
+	{
+		__setLogicalSize(width, height);
 	}
 
 	@:noCompletion private function __startDrag(sprite:Sprite, lockCenter:Bool, bounds:Rectangle):Void
