@@ -1,11 +1,11 @@
 {
 	"name": "openfl",
-	"url": "http://www.openfl.org",
+	"url": "https://github.com/TieGao/openfl",
 	"license": "MIT",
 	"tags": ["openfl", "lime", "flash"],
 	"description": "The \"Open Flash Library\" for fast 2D development",
-	"version": "9.5.2",
-	"releasenote": "Various bug fixes",
+	"version": "9.6.0",
+	"releasenote": "NovaFlare NF compatibility port on upstream 9.6.0-dev base",
 	"contributors": [
 		"singmajesty",
 		"bowlerhat",
