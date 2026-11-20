@@ -1,7 +1,6 @@
 package openfl.display;
 
 import openfl.utils.Assets;
-import openfl.utils.GLSLSourceAssembler;
 import openfl.Lib;
 #if lime
 import lime.graphics.opengl.GL;
