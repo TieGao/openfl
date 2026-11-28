@@ -165,7 +165,6 @@ import openfl.utils.ByteArray;
 			__context.__bindGLTextureCubeMap(__textureID);
 			gl.texImage2D(target, miplevel, __internalFormat, __format, gl.UNSIGNED_BYTE, image.buffer.src);
 			__context.__bindGLTextureCubeMap(null);
-			__setLevelMemory(miplevel, size * size * 4, side);
 
 			__uploadedSides |= 1 << side;
 			return;
@@ -250,7 +249,6 @@ import openfl.utils.ByteArray;
 		__context.__bindGLTextureCubeMap(__textureID);
 		gl.texImage2D(target, miplevel, __internalFormat, size, size, 0, __format, gl.UNSIGNED_BYTE, data);
 		__context.__bindGLTextureCubeMap(null);
-		__setLevelMemory(miplevel, size * size * 4, side);
 
 		__uploadedSides |= 1 << side;
 	}
@@ -368,7 +366,6 @@ import openfl.utils.ByteArray;
 
 				gl.compressedTexImage2D(target, level, __internalFormat, width, height, 0,
 					new UInt8Array(#if js @:privateAccess bytes.b.buffer #else bytes #end, 0, size));
-				__setLevelMemory(level, size, side);
 
 				var alphaTexture = new CubeTexture(__context, __size, Context3DTextureFormat.COMPRESSED, __optimizeForRenderToTexture, __streamingLevels);
 				alphaTexture.__format = format;
@@ -377,7 +374,6 @@ import openfl.utils.ByteArray;
 				__context.__bindGLTextureCubeMap(alphaTexture.__textureID);
 				gl.compressedTexImage2D(target, level, alphaTexture.__internalFormat, width, height, 0,
 					new UInt8Array(#if js @:privateAccess bytes.b.buffer #else bytes #end, size, size));
-				alphaTexture.__setLevelMemory(level, size, side);
 
 				__alphaTexture = alphaTexture;
 			}
@@ -385,7 +381,6 @@ import openfl.utils.ByteArray;
 			{
 				gl.compressedTexImage2D(target, level, __internalFormat, width, height, 0,
 					new UInt8Array(#if js @:privateAccess bytes.b.buffer #else bytes #end, 0, blockLength));
-				__setLevelMemory(level, blockLength, side);
 			}
 		});
 
@@ -395,7 +390,6 @@ import openfl.utils.ByteArray;
 			{
 				var data = new UInt8Array(__size * __size * 4);
 				gl.texImage2D(__sideToTarget(side), 0, __internalFormat, __size, __size, 0, __format, gl.UNSIGNED_BYTE, data);
-				__setLevelMemory(0, __size * __size * 4, side);
 			}
 		}
 		#end
